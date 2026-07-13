@@ -149,10 +149,10 @@ func _windows(w: float, _h: float, d: float) -> void:
 	for entry in positions:
 		var center: Vector3 = entry[0]
 		var yaw: float = entry[1]
-		var basis := Basis(Vector3.UP, yaw)
-		var right := basis * Vector3(0.62, 0, 0)
+		var rot_basis := Basis(Vector3.UP, yaw)
+		var right := rot_basis * Vector3(0.62, 0, 0)
 		var up := Vector3(0, 0.55, 0)
-		var n := basis * Vector3.BACK
+		var n := rot_basis * Vector3.BACK
 		for tri in [[center - right - up, center + right - up, center + right + up], [center - right - up, center + right + up, center - right + up]]:
 			for v in tri:
 				st.set_normal(n)
@@ -292,14 +292,14 @@ func _counter(pos: Vector3, width: float) -> void:
 
 
 func _shelf(pos: Vector3, yaw: float) -> void:
-	var basis := Basis(Vector3.UP, yaw)
+	var rot_basis := Basis(Vector3.UP, yaw)
 	Props.add_box(_st, pos + Vector3(0, 1.0, 0), Vector3(0.4, 2.0, 1.8), Color(0.5, 0.38, 0.26), yaw)
 	for level in 3:
 		var shelf_y := 0.5 + level * 0.55
 		for i in 3:
-			var offset := basis * Vector3(0.0, 0, -0.6 + i * 0.6)
+			var offset := rot_basis * Vector3(0.0, 0, -0.6 + i * 0.6)
 			var c := Color(0.8, 0.6, 0.3).lerp(Color(0.4, 0.6, 0.75), float((level * 3 + i) % 4) / 3.0)
-			Props.add_box(_st, pos + offset + Vector3(0, shelf_y + 0.12, 0) + basis * Vector3(0.05, 0, 0), Vector3(0.22, 0.24, 0.3), c, yaw)
+			Props.add_box(_st, pos + offset + Vector3(0, shelf_y + 0.12, 0) + rot_basis * Vector3(0.05, 0, 0), Vector3(0.22, 0.24, 0.3), c, yaw)
 	var col_size := Vector3(1.8, 2.0, 0.45) if absf(sin(yaw)) > 0.5 else Vector3(0.45, 2.0, 1.8)
 	_collisions.append([pos + Vector3(0, 1.0, 0), col_size, ""])
 

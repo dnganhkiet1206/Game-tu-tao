@@ -53,7 +53,7 @@ Build:
 
 | Vùng màn hình | Chức năng |
 |---|---|
-| Góc trên trái | **Minimap** theo người chơi (mũi tên = hướng, chấm vàng = mục tiêu) |
+| Góc trên trái | **Minimap** theo người chơi (mũi tên = hướng, chấm vàng = mục tiêu) — **chạm vào để mở bản đồ toàn đảo** với icon cửa hàng 🏪, gara 🚗, cảnh sát 🚓, chợ cá 🐟, điểm câu 🎣… (phím M trên PC) |
 | Nửa **trái** | Joystick ảo nổi (chạm đâu cần hiện đó) |
 | Nửa **phải** (vuốt) | Xoay camera |
 | Nút **❗/✋** | Tương tác theo ngữ cảnh (mở cửa, nói chuyện, mua bán, câu cá, lên xe…) |
@@ -104,11 +104,16 @@ src/
 - 3 mức **Đồ hoạ** trong menu (Thấp / Vừa / Cao): đổi độ phân giải render, bóng đổ, đèn nội thất.
 - Máy tầm trung nên để **Vừa**; máy yếu để **Thấp** (tắt bóng đổ, render scale 0.8).
 
-## 9. Tái tạo âm thanh (tuỳ chọn)
+## 9. Công cụ dev (tuỳ chọn)
 
 ```bash
+# Tái tạo toàn bộ âm thanh
 pip install numpy
-python3 tools/generate_audio.py   # ghi lại toàn bộ assets/audio/*.wav
+python3 tools/generate_audio.py
+
+# Phân tích ngữ nghĩa toàn bộ GDScript (trình phân tích chuẩn Godot 4, chạy bằng Node)
+npm i @gdscript-analyzer/core
+node tools/analyze.mjs            # mục tiêu: 0 errors, 0 warnings
 ```
 
 ## 10. Giấy phép

@@ -55,7 +55,7 @@ func _cancel() -> void:
 
 func _next_fare() -> void:
 	var player_pos: Vector3 = Game.player.global_position
-	var spots := MapLayout.TAXI_SPOTS.duplicate()
+	var spots: Array = MapLayout.TAXI_SPOTS.duplicate()
 	spots.shuffle()
 	var pickup_spot: Dictionary = spots[0]
 	for spot in spots:
@@ -134,7 +134,7 @@ func _board_passenger() -> void:
 	tween.tween_callback(func() -> void:
 		_clear_passenger()
 		Audio.play_at("car_door_close", seat, -4.0)
-		var spots := MapLayout.TAXI_SPOTS.duplicate()
+		var spots: Array = MapLayout.TAXI_SPOTS.duplicate()
 		spots.shuffle()
 		# Fall back to the farthest spot if none clears the distance bar.
 		var chosen: Dictionary = spots[0]

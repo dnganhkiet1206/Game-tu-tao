@@ -4,6 +4,8 @@ extends Control
 ## follows the player, with a heading arrow and the current objective dot.
 ## North is up (world +Z maps to screen down, matching world axes).
 
+signal tapped
+
 const WINDOW_M := 250.0
 
 var objective_pos := Vector3.ZERO
@@ -13,9 +15,17 @@ var _tex: ImageTexture = null
 
 
 func _ready() -> void:
-	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# STOP so a tap on the minimap opens the big map (this control sits
+	# above the joystick capture area).
+	mouse_filter = Control.MOUSE_FILTER_STOP
 	custom_minimum_size = Vector2(168, 168)
 	size = Vector2(168, 168)
+
+
+func _gui_input(event: InputEvent) -> void:
+	if event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed:
+		accept_event()
+		tapped.emit()
 
 
 func setup(tex: ImageTexture) -> void:
@@ -31,9 +41,9 @@ func _draw() -> void:
 	if _tex == null or not is_instance_valid(Game.player):
 		return
 	var n := float(Terrain.N)
-	var half_px := WINDOW_M * 0.5 / Terrain.CELL
+	var half_px: float = WINDOW_M * 0.5 / Terrain.CELL
 	var p: Vector3 = Game.player.global_position
-	var center_px := Vector2(p.x, p.z) / Terrain.CELL
+	var center_px: Vector2 = Vector2(p.x, p.z) / Terrain.CELL
 	var region := Rect2(center_px - Vector2(half_px, half_px), Vector2(half_px, half_px) * 2.0)
 	region.position.x = clampf(region.position.x, 0.0, n - region.size.x)
 	region.position.y = clampf(region.position.y, 0.0, n - region.size.y)
@@ -43,13 +53,13 @@ func _draw() -> void:
 	var px_scale := size.x / region.size.x  # screen px per map px
 
 	if objective_active:
-		var o := (Vector2(objective_pos.x, objective_pos.z) / Terrain.CELL - region.position) * px_scale
+		var o: Vector2 = (Vector2(objective_pos.x, objective_pos.z) / Terrain.CELL - region.position) * px_scale
 		o = o.clamp(Vector2(7, 7), size - Vector2(7, 7))
 		draw_circle(o, 6.0, Color(0.08, 0.08, 0.08, 0.9))
 		draw_circle(o, 4.5, Color(1.0, 0.85, 0.2))
 
 	# Player heading arrow (facing +Z == screen down).
-	var sp := (center_px - region.position) * px_scale
+	var sp: Vector2 = (center_px - region.position) * px_scale
 	var yaw: float = Game.player.rotation.y
 	var fwd := Vector2(sin(yaw), cos(yaw))
 	var perp := Vector2(-fwd.y, fwd.x)

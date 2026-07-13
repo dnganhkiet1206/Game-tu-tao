@@ -89,6 +89,10 @@ Scene duy nhất main.tscn → src/main.gd dựng:
 Project được phát triển trong môi trường không chạy được editor, nên:
 
 - 100% file GDScript được kiểm qua **gdparse/gdlint** (parser chính thức của GDScript 4).
+- Toàn bộ project được quét bằng **trình phân tích ngữ nghĩa Godot-faithful**
+  (`@gdscript-analyzer/core`, chạy qua `node tools/analyze.mjs`) với đầy đủ
+  autoload + cross-file resolution — hiện đạt **0 errors / 0 warnings** trên 37 file.
+  Chính bước này đã bắt được một lỗi cú pháp lambda mà gdparse bỏ lọt.
 - Các hợp đồng giữa hệ thống (tên hàm/tín hiệu/nhóm node) được rà soát chéo thủ công từng file.
 - Những vùng rủi ro render (winding, cull) được phòng thủ bằng normal tường minh + material 2 mặt.
 

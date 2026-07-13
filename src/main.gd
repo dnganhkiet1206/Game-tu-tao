@@ -46,7 +46,7 @@ func _ready() -> void:
 
 
 func _spawn_point() -> Vector3:
-	var p := MapLayout.PLAYER_SPAWN
+	var p: Vector3 = MapLayout.PLAYER_SPAWN
 	return Vector3(p.x, world.terrain.height_at(p.x, p.z) + 0.3, p.z)
 
 

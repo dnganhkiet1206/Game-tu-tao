@@ -230,7 +230,7 @@ func map_base_image() -> Image:
 
 func ambience_at(pos: Vector3) -> Dictionary:
 	var waves := clampf(1.0 - (pos.x - 150.0) / 240.0, 0.0, 1.0)
-	var forest_rect := MapLayout.FOREST_RECT.grow(40.0)
+	var forest_rect: Rect2 = MapLayout.FOREST_RECT.grow(40.0)
 	var forest := 0.0
 	if forest_rect.has_point(Vector2(pos.x, pos.z)):
 		forest = 1.0

@@ -1,4 +1,4 @@
-class_name VirtualJoystick
+class_name FloatingJoystick
 extends Control
 ## Floating virtual joystick: the stick appears where the thumb lands
 ## (anywhere on the left part of the screen) — the standard feel in

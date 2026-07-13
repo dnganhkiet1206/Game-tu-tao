@@ -33,7 +33,7 @@ static func make(p_data: Dictionary) -> NPC:
 
 func _ready() -> void:
 	add_to_group("npc")
-	collision_layer = Layers.NPC | Layers.INTERACT
+	collision_layer = Layers.NPCS | Layers.INTERACT
 	collision_mask = Layers.WORLD
 	var col := CollisionShape3D.new()
 	var capsule := CapsuleShape3D.new()
@@ -71,7 +71,6 @@ func _ready() -> void:
 ## [key, world_target, hidden, anim]
 func _current_slot() -> Array:
 	var h := DayNight.time_hours
-	var role: String = data.role
 	var world := Game.world
 	if h < 6.25 or h >= 21.0:
 		return ["sleep", _home_pos(), true, "idle"]
@@ -172,7 +171,7 @@ func _start_moving_to(target: Vector3, hide_at_end: bool) -> void:
 	if mode == Mode.HIDDEN and not hide_at_end:
 		# Step out of the building.
 		visible = true
-		collision_layer = Layers.NPC | Layers.INTERACT
+		collision_layer = Layers.NPCS | Layers.INTERACT
 		var b := _building_node()
 		if b != null and b.door != null:
 			b.door.open_for(1.4)

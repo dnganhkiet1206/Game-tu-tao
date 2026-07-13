@@ -54,7 +54,7 @@ func _ready() -> void:
 	if kind == "taxi":
 		add_to_group("taxi")
 	collision_layer = Layers.VEHICLE
-	collision_mask = Layers.WORLD | Layers.VEHICLE | Layers.PLAYER | Layers.NPC
+	collision_mask = Layers.WORLD | Layers.VEHICLE | Layers.PLAYER | Layers.NPCS
 	motion_mode = CharacterBody3D.MOTION_MODE_GROUNDED
 
 	var col := CollisionShape3D.new()
@@ -197,6 +197,12 @@ func can_interact(_player: Node3D) -> bool:
 func _on_enter_requested(player: Node3D) -> void:
 	if driver != null or not player is PlayerCharacter:
 		return
+	# A patrolling AI car pulls over immediately — the seat must hold still
+	# while the enter animation plays.
+	if not ai_route.is_empty():
+		ai_route = []
+		speed = 0.0
+		velocity = Vector3.ZERO
 	if owner_tag == "npc" and not stolen_reported:
 		stolen_reported = true
 		Events.crime_committed.emit("car_theft", global_position)
@@ -266,7 +272,7 @@ func _ai_drive(delta: float) -> void:
 	var space := get_world_3d().direct_space_state
 	var from := global_position + Vector3(0, 0.7, 0) + global_transform.basis.z * 2.2
 	var query := PhysicsRayQueryParameters3D.create(from, from + global_transform.basis.z * 7.5,
-		Layers.PLAYER | Layers.NPC | Layers.VEHICLE)
+		Layers.PLAYER | Layers.NPCS | Layers.VEHICLE)
 	query.exclude = [get_rid()]
 	var blocked := not space.intersect_ray(query).is_empty()
 	var target_speed := 0.0 if blocked else AI_SPEED * clampf(1.5 - absf(err), 0.25, 1.0)

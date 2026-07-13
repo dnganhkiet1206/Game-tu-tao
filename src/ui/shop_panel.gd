@@ -138,13 +138,13 @@ func _buy_row(item_id: String) -> void:
 	if is_tool and owned > 0:
 		_make_row(left, "Đã có ✓", false, Callable())
 		return
-	_make_row(left, "Mua — %s" % Game.format_money(price), Game.money >= price, func() -> void:
+	var buy_cb := func() -> void:
 		if Game.try_spend(price):
 			Game.add_item(item_id)
 			Audio.play_ui("cash")
 			if is_tool:
 				Events.toast.emit("Đã mua %s — ra tìm việc thôi!" % item.name)
-	)
+	_make_row(left, "Mua — %s" % Game.format_money(price), Game.money >= price, buy_cb)
 
 
 func _car_row(car_id: String) -> void:
@@ -154,7 +154,7 @@ func _car_row(car_id: String) -> void:
 	if owned:
 		_make_row(left, "Đã mua ✓", false, Callable())
 		return
-	_make_row(left, "Mua — %s" % Game.format_money(car.price), Game.money >= car.price, func() -> void:
+	var buy_cb := func() -> void:
 		if Game.try_spend(car.price):
 			Game.owned_cars.append(car_id)
 			Audio.play_ui("cash")
@@ -163,7 +163,7 @@ func _car_row(car_id: String) -> void:
 				main.spawn_owned_car(car_id, true)
 			Events.toast.emit("🔑 Xe %s đang đợi trước gara!" % car.name)
 			Game.save_game()
-	)
+	_make_row(left, "Mua — %s" % Game.format_money(car.price), Game.money >= car.price, buy_cb)
 
 
 func _sell_rows(item_ids: Array) -> void:
@@ -175,12 +175,14 @@ func _sell_rows(item_ids: Array) -> void:
 		any = true
 		var item: Dictionary = Game.ITEMS[item_id]
 		var total: int = item.sell * count
-		_make_row("%s %s × %d" % [item.icon, item.name, count],
-			"Bán hết — %s" % Game.format_money(total), true, func() -> void:
+		# Lambda extracted to a local: a trailing multi-line lambda at this
+		# indent level is rejected by Godot's tokenizer.
+		var sell_cb := func() -> void:
 			if Game.remove_item(item_id, count):
 				Game.add_money(total, true)
 				Audio.play_ui("cash")
-		)
+		_make_row("%s %s × %d" % [item.icon, item.name, count],
+			"Bán hết — %s" % Game.format_money(total), true, sell_cb)
 	if not any:
 		var label := Label.new()
 		label.text = "Bạn chưa có gì để bán ở đây."

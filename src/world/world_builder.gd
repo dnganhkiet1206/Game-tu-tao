@@ -140,7 +140,7 @@ func _build_pier(spec: Dictionary, deck_y: float) -> void:
 	var post_count := int(length / 4.0)
 	for i in post_count + 1:
 		for s in [-1.0, 1.0]:
-			var base := Vector3(start.x, deck_y - 3.4, start.y) + dir3 * i * 4.0 + side3 * s * (width * 0.5 - 0.12)
+			var base: Vector3 = Vector3(start.x, deck_y - 3.4, start.y) + dir3 * i * 4.0 + side3 * s * (width * 0.5 - 0.12)
 			Props.add_cylinder(st, base, 0.11, 0.1, 3.5, 5, wood.darkened(0.25), false)
 	var body := StaticBody3D.new()
 	body.collision_layer = Layers.WORLD
@@ -168,7 +168,7 @@ func _build_forest_and_props() -> void:
 	var choppable_parent := Node3D.new()
 	choppable_parent.name = "Trees"
 	add_child(choppable_parent)
-	var rect := MapLayout.FOREST_RECT
+	var rect: Rect2 = MapLayout.FOREST_RECT
 	var variant := 0
 	var step := 15.0
 	var x := rect.position.x
@@ -218,8 +218,8 @@ func _build_forest_and_props() -> void:
 	var leafs: Array[Transform3D] = []
 	for i in 40:
 		var ang := _rng.randf_range(0.0, TAU)
-		var r := MapLayout.LAKE_RADIUS + _rng.randf_range(10.0, 30.0)
-		var p := MapLayout.LAKE_CENTER + Vector2(cos(ang), sin(ang)) * r
+		var r: float = MapLayout.LAKE_RADIUS + _rng.randf_range(10.0, 30.0)
+		var p: Vector2 = MapLayout.LAKE_CENTER + Vector2(cos(ang), sin(ang)) * r
 		if not _spot_ok_for_tree(p.x, p.y):
 			continue
 		var h := terrain.height_at(p.x, p.y)
@@ -232,8 +232,8 @@ func _build_forest_and_props() -> void:
 	var rocks: Array[Transform3D] = []
 	for i in 60:
 		var ang := _rng.randf_range(0.0, TAU)
-		var r := MapLayout.QUARRY_RADIUS + _rng.randf_range(4.0, 26.0)
-		var p := MapLayout.QUARRY_CENTER + Vector2(cos(ang), sin(ang)) * r
+		var r: float = MapLayout.QUARRY_RADIUS + _rng.randf_range(4.0, 26.0)
+		var p: Vector2 = MapLayout.QUARRY_CENTER + Vector2(cos(ang), sin(ang)) * r
 		if p.x > 795.0 or p.y > 795.0:
 			continue
 		if terrain.road_distance(p.x, p.y) < 6.0:
@@ -289,7 +289,7 @@ func _build_quarry_resources() -> void:
 	for i in kinds.size():
 		var ang := TAU * i / kinds.size() + _rng.randf_range(-0.2, 0.2)
 		var r := _rng.randf_range(10.0, 26.0)
-		var p := MapLayout.QUARRY_CENTER + Vector2(cos(ang), sin(ang)) * r
+		var p: Vector2 = MapLayout.QUARRY_CENTER + Vector2(cos(ang), sin(ang)) * r
 		var ore := ResourceNode.make_ore(kinds[i])
 		ore.position = Vector3(p.x, terrain.height_at(p.x, p.y) - 0.05, p.y)
 		ore.rotation.y = _rng.randf_range(0.0, TAU)
@@ -314,7 +314,7 @@ func _build_street_furniture() -> void:
 		var t := 0.0
 		var side := 1.0
 		while t < length:
-			var p := a + dir * t + perp * spec.offset * side
+			var p: Vector2 = a + dir * t + perp * spec.offset * side
 			var h := terrain.height_at(p.x, p.y)
 			var face := atan2(dir.x, dir.y)
 			poles.append(Transform3D(Basis(Vector3.UP, face), Vector3(p.x, h, p.y)))
@@ -447,7 +447,7 @@ func _on_hour_changed(_hour: int) -> void:
 ## Minimap texture: terrain base + building footprints stamped on top.
 func make_map_texture() -> ImageTexture:
 	var img := terrain.map_base_image()
-	var n := Terrain.N
+	var n: int = Terrain.N
 	for rect in _indoor_rects:
 		var x0 := clampi(int(rect.position.x / Terrain.CELL), 0, n - 1)
 		var x1 := clampi(int(ceilf(rect.end.x / Terrain.CELL)), 0, n - 1)

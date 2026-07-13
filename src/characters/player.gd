@@ -30,7 +30,6 @@ var vehicle: Node3D = null
 var _coyote := 0.0
 var _jump_buffer := 0.0
 var _step_distance := 0.0
-var _was_in_water := false
 var _work_target: ResourceNode = null
 var _work_timer := 0.0
 var _work_hit_done := false
@@ -47,7 +46,7 @@ var _yaw_target := 0.0
 func _ready() -> void:
 	add_to_group("player")
 	collision_layer = Layers.PLAYER
-	collision_mask = Layers.WORLD | Layers.VEHICLE | Layers.NPC
+	collision_mask = Layers.WORLD | Layers.VEHICLE | Layers.NPCS
 	var col := CollisionShape3D.new()
 	var capsule := CapsuleShape3D.new()
 	capsule.radius = 0.34
@@ -160,9 +159,9 @@ func _gather_move_dir() -> Vector3:
 		raw = raw.normalized()
 	if raw.length_squared() < 0.004:
 		return Vector3.ZERO
-	var cam_yaw := camera_rig.yaw if camera_rig != null else 0.0
-	var basis := Basis(Vector3.UP, cam_yaw)
-	return basis * Vector3(raw.x, 0, raw.y)
+	var cam_yaw: float = camera_rig.yaw if camera_rig != null else 0.0
+	var cam_basis := Basis(Vector3.UP, cam_yaw)
+	return cam_basis * Vector3(raw.x, 0, raw.y)
 
 
 func _locomotion(delta: float) -> void:
@@ -522,7 +521,7 @@ func exit_vehicle_at(spot: Vector3) -> void:
 	tween.tween_property(self, "global_position", spot, 0.4)
 	tween.tween_callback(func() -> void:
 		collision_layer = Layers.PLAYER
-		collision_mask = Layers.WORLD | Layers.VEHICLE | Layers.NPC
+		collision_mask = Layers.WORLD | Layers.VEHICLE | Layers.NPCS
 		state = State.GROUND
 		velocity = Vector3.ZERO
 		if old_vehicle != null:

@@ -6,7 +6,7 @@ extends CanvasLayer
 var joystick_vector := Vector2.ZERO
 var player: PlayerCharacter = null
 
-var _joystick: VirtualJoystick
+var _joystick: FloatingJoystick
 var _root: Control
 var _foot_controls: Control
 var _drive_controls: Control
@@ -39,7 +39,9 @@ var _blocked_count := 0
 
 var shop_panel: ShopPanel
 var menus: Menus
+var big_map: BigMap
 var _minimap: Minimap
+var _map_tex: ImageTexture = null
 
 
 func _ready() -> void:
@@ -61,6 +63,11 @@ func _ready() -> void:
 
 	shop_panel = ShopPanel.new()
 	_root.add_child(shop_panel)
+	big_map = BigMap.new()
+	_root.add_child(big_map)
+	if _map_tex != null:
+		big_map.setup(_map_tex)
+	big_map.closed.connect(pop_block)
 	menus = Menus.new()
 	_root.add_child(menus)
 
@@ -117,7 +124,7 @@ static func _build_theme() -> Theme:
 # --- construction ------------------------------------------------------------
 
 func _build_joystick() -> void:
-	_joystick = VirtualJoystick.new()
+	_joystick = FloatingJoystick.new()
 	_root.add_child(_joystick)
 	_joystick.anchor_left = 0.0
 	_joystick.anchor_right = 0.44
@@ -235,7 +242,9 @@ func _build_status() -> void:
 	_minimap.position = Vector2(20, 92)
 	_root.add_child(_minimap)
 	if is_instance_valid(Game.world) and Game.world.has_method("make_map_texture"):
-		_minimap.setup(Game.world.make_map_texture())
+		_map_tex = Game.world.make_map_texture()
+		_minimap.setup(_map_tex)
+	_minimap.tapped.connect(toggle_big_map)
 	_layout_buttons()
 
 
@@ -330,8 +339,12 @@ func _process(_delta: float) -> void:
 			_on_interact_tap()
 		if Input.is_action_just_pressed("attack") and player.state == PlayerCharacter.State.GROUND:
 			player.try_punch()
+	if Input.is_action_just_pressed("map") and not menus.any_open() and not shop_panel.visible:
+		toggle_big_map()
 	if Input.is_action_just_pressed("pause"):
-		if shop_panel.visible:
+		if big_map.visible:
+			big_map.close()
+		elif shop_panel.visible:
 			shop_panel.close_panel()
 		elif _dialogue_panel.visible:
 			_close_dialogue()
@@ -370,6 +383,14 @@ func _set_drive_mode(driving: bool) -> void:
 
 
 # --- blocking / modal helpers --------------------------------------------------------
+
+func toggle_big_map() -> void:
+	if big_map.visible:
+		big_map.close()
+	elif _blocked_count == 0:
+		big_map.open()
+		push_block()
+
 
 func push_block() -> void:
 	_blocked_count += 1
@@ -419,6 +440,9 @@ func _on_objective(text: String, pos: Vector3, active: bool) -> void:
 	if _minimap != null:
 		_minimap.objective_active = active
 		_minimap.objective_pos = pos
+	if big_map != null:
+		big_map.objective_active = active
+		big_map.objective_pos = pos
 	_objective_label.text = text
 	_objective_panel.visible = active
 	if active:
