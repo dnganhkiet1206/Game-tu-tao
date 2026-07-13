@@ -24,6 +24,12 @@ var speed := 0.0
 var driver: Node3D = null
 var stolen_reported := false
 
+# Ambient AI driving (ping-pong patrol along a road polyline).
+const AI_SPEED := 7.5
+var ai_route: Array = []
+var _ai_index := 0
+var _ai_step := 1
+
 var _door_l: Node3D
 var _wheels: Array[Node3D] = []
 var _wheel_spin := 0.0
@@ -172,7 +178,8 @@ func _build_visual() -> void:
 
 
 func _update_lights() -> void:
-	var on := DayNight.is_night() and driver != null and Game.quality >= 1
+	var driven := driver != null or not ai_route.is_empty()
+	var on := DayNight.is_night() and driven and Game.quality >= 1
 	for light in _headlights:
 		light.light_energy = 2.4 if on else 0.0
 
@@ -222,8 +229,66 @@ func passenger_seat_global() -> Vector3:
 	return _passenger_seat.global_position
 
 
+## Puts this car on autopilot along a road polyline (ping-pong patrol).
+func start_ai_route(points: Array) -> void:
+	ai_route = points.duplicate()
+	if ai_route.is_empty():
+		return
+	var best := 0
+	var best_d := 1.0e12
+	for i in ai_route.size():
+		var d: float = global_position.distance_to(ai_route[i])
+		if d < best_d:
+			best_d = d
+			best = i
+	_ai_index = best
+	_ai_step = 1
+	set_physics_process(true)
+	if not _engine.playing:
+		_engine.play()
+	_update_lights()
+
+
+func _ai_drive(delta: float) -> void:
+	var target: Vector3 = ai_route[_ai_index]
+	var to_t := target - global_position
+	to_t.y = 0.0
+	if to_t.length() < 5.0:
+		_ai_index += _ai_step
+		if _ai_index >= ai_route.size() or _ai_index < 0:
+			_ai_step = -_ai_step
+			_ai_index += _ai_step * 2
+		return
+	var desired := atan2(to_t.x, to_t.z)
+	var err := wrapf(desired - rotation.y, -PI, PI)
+	rotation.y += clampf(err, -1.5 * delta, 1.5 * delta)
+	# Brake for anything on the road ahead (player, NPCs, other cars).
+	var space := get_world_3d().direct_space_state
+	var from := global_position + Vector3(0, 0.7, 0) + global_transform.basis.z * 2.2
+	var query := PhysicsRayQueryParameters3D.create(from, from + global_transform.basis.z * 7.5,
+		Layers.PLAYER | Layers.NPC | Layers.VEHICLE)
+	query.exclude = [get_rid()]
+	var blocked := not space.intersect_ray(query).is_empty()
+	var target_speed := 0.0 if blocked else AI_SPEED * clampf(1.5 - absf(err), 0.25, 1.0)
+	speed = move_toward(speed, target_speed, 7.0 * delta)
+	if is_on_floor():
+		_vy = -1.0
+	else:
+		_vy -= GRAVITY * delta
+	velocity = global_transform.basis.z * speed + Vector3(0, _vy, 0)
+	move_and_slide()
+	_wheel_spin += speed * delta / 0.34
+	for i in _wheels.size():
+		_wheels[i].rotation.x = _wheel_spin
+		if i < 2:
+			_wheels[i].rotation.y = clampf(err, -0.4, 0.4)
+	_engine.pitch_scale = 0.75 + clampf(absf(speed) / AI_SPEED, 0.0, 1.0) * 0.5
+	_engine.volume_db = -12.0
+
+
 func set_driver(p_driver: Node3D) -> void:
 	driver = p_driver
+	ai_route = []  # a stolen patrol car stays stolen
 	close_door()
 	set_physics_process(true)
 	Audio.play_at("car_start", global_position, 0.0)
@@ -257,24 +322,28 @@ func eject_driver() -> void:
 
 func _physics_process(delta: float) -> void:
 	if driver == null:
+		if not ai_route.is_empty():
+			_ai_drive(delta)
 		return
 	var spec: Dictionary = KINDS[kind]
 	var top: float = spec.top_speed
 	var accel: float = spec.accel
 
 	var throttle := 0.0
-	if Input.is_action_pressed("move_forward"):
-		throttle += 1.0
-	if Input.is_action_pressed("move_back"):
-		throttle -= 1.0
-	var steer := Input.get_axis("move_right", "move_left")
-	var hud := get_tree().get_first_node_in_group("hud")
-	if hud != null and "joystick_vector" in hud:
-		var jv: Vector2 = hud.joystick_vector
-		if absf(jv.x) > absf(steer):
-			steer = -jv.x
-		if absf(jv.y) > 0.5 and absf(throttle) < 0.1:
-			throttle = -signf(jv.y)
+	var steer := 0.0
+	if not Game.ui_blocked:
+		if Input.is_action_pressed("move_forward"):
+			throttle += 1.0
+		if Input.is_action_pressed("move_back"):
+			throttle -= 1.0
+		steer = Input.get_axis("move_right", "move_left")
+		var hud := get_tree().get_first_node_in_group("hud")
+		if hud != null and "joystick_vector" in hud:
+			var jv: Vector2 = hud.joystick_vector
+			if absf(jv.x) > absf(steer):
+				steer = -jv.x
+			if absf(jv.y) > 0.5 and absf(throttle) < 0.1:
+				throttle = -signf(jv.y)
 
 	# Speed integration.
 	if throttle > 0.0:

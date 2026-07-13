@@ -57,18 +57,18 @@ Scene duy nhất main.tscn → src/main.gd dựng:
 | Bản đồ ~1 km² | **800×800 m (0,64 km²)** | Mật độ > diện tích với demo 20–30 phút. Tăng `WORLD_SIZE` + thêm layout là mở rộng được. |
 | 40–60 NPC | **24 NPC** | Giữ 30 FPS máy tầm trung; kiến trúc là data-table, thêm NPC = thêm dòng trong `npc_data.gd`. |
 | Semi-realistic | **Stylized low-poly** | Xem mục 2. |
-| Xe cộ giao thông tự chạy | Chỉ xe đỗ (6) + 2 xe bán | AI giao thông + tránh né là hố sâu; roadgraph đã có sẵn để làm sau. |
+| Xe cộ giao thông tự chạy | **2 xe AI tuần tra** (phanh tránh chướng ngại, quay đầu cuối đường, cướp được) + 6 xe đỗ + 2 xe bán | Mạng đường là cây (không có vòng kín) nên xe chạy kiểu con thoi; giao lộ thông minh hơn là bước sau. |
 | Cảnh sát lái xe truy đuổi | Truy đuổi **chạy bộ** + 3 mức sao | Đủ tạo vòng lặp phạm tội–hình phạt; xe cảnh sát là bước tiếp theo tự nhiên. |
 | Lặn dưới nước | Chỉ **bơi trên mặt** | Lặn cần hệ oxy + camera nước; ít giá trị cho slice. |
-| Minimap | **Mũi tên chỉ mục tiêu + khoảng cách** | Rẻ hơn nhiều mà vẫn dẫn đường tốt trên màn hình nhỏ. |
+| Minimap | **Có** — texture đảo bake 1 lần từ dữ liệu địa hình (201×201 px), cửa sổ zoom 250 m theo người chơi + mũi tên hướng + chấm mục tiêu; kèm mũi tên dẫn đường trên màn hình chính | Chi phí ~0 (1 texture nhỏ + vài lệnh draw 2D mỗi frame). |
 | Đánh nhau đầy đủ | 1 đòn đấm + NPC bỏ chạy | Combat sâu không phải trọng tâm của IP đời-sống này. |
 | Hệ đói/khát/máu | Chưa có (đồ ăn là flavor) | Tránh phình hệ thống; móc sẵn qua item `banh_mi`/`ca_phe`. |
 
 ## 5. Lộ trình phát triển tiếp (đề xuất theo thứ tự)
 
 1. **Asset pass**: thay Props/Humanoid bằng model + texture thật (giữ nguyên interface) → đạt semi-realistic.
-2. Xe cảnh sát + AI giao thông trên roadgraph có sẵn.
-3. Minimap (viewport top-down) + bản đồ toàn màn hình.
+2. Xe cảnh sát truy đuổi + giao lộ/đèn tín hiệu cho xe AI (đã có 2 xe tuần tra nền).
+3. Bản đồ toàn màn hình (minimap đã có; tái dùng cùng texture).
 4. Chuỗi nhiệm vụ cốt truyện (hệ Events + objective đã sẵn sàng).
 5. Hệ đói/năng lượng gắn vào đồ ăn hiện có.
 6. Thú nuôi/câu hợp tác, thuyền (nước đã có ambience + bơi).

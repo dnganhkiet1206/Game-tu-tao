@@ -49,6 +49,7 @@ var stats: Dictionary = {
 	"fines_paid": 0,
 }
 var quality: int = 1  # 0 = low, 1 = medium, 2 = high
+var ui_blocked: bool = false  # true while a modal panel / menu / fade owns input
 var player: Node3D = null
 var world: Node3D = null
 var loaded_from_save: bool = false

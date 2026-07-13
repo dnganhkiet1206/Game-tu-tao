@@ -444,6 +444,21 @@ func _on_hour_changed(_hour: int) -> void:
 			b.interior_light.visible = night and Game.quality >= 1
 
 
+## Minimap texture: terrain base + building footprints stamped on top.
+func make_map_texture() -> ImageTexture:
+	var img := terrain.map_base_image()
+	var n := Terrain.N
+	for rect in _indoor_rects:
+		var x0 := clampi(int(rect.position.x / Terrain.CELL), 0, n - 1)
+		var x1 := clampi(int(ceilf(rect.end.x / Terrain.CELL)), 0, n - 1)
+		var z0 := clampi(int(rect.position.y / Terrain.CELL), 0, n - 1)
+		var z1 := clampi(int(ceilf(rect.end.y / Terrain.CELL)), 0, n - 1)
+		for iz in range(z0, z1 + 1):
+			for ix in range(x0, x1 + 1):
+				img.set_pixel(ix, iz, Color(0.88, 0.85, 0.78))
+	return ImageTexture.create_from_image(img)
+
+
 func ambience_at(pos: Vector3) -> Dictionary:
 	var result := terrain.ambience_at(pos)
 	var p2 := Vector2(pos.x, pos.z)

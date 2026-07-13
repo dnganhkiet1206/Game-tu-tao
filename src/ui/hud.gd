@@ -39,6 +39,7 @@ var _blocked_count := 0
 
 var shop_panel: ShopPanel
 var menus: Menus
+var _minimap: Minimap
 
 
 func _ready() -> void:
@@ -229,6 +230,12 @@ func _build_status() -> void:
 	_toast_box.size = Vector2(440, 200)
 	_toast_box.alignment = BoxContainer.ALIGNMENT_BEGIN
 	_root.add_child(_toast_box)
+
+	_minimap = Minimap.new()
+	_minimap.position = Vector2(20, 92)
+	_root.add_child(_minimap)
+	if is_instance_valid(Game.world) and Game.world.has_method("make_map_texture"):
+		_minimap.setup(Game.world.make_map_texture())
 	_layout_buttons()
 
 
@@ -296,6 +303,7 @@ func _process(_delta: float) -> void:
 	player.move_input = Vector2.ZERO if _blocked_count > 0 else joystick_vector
 	_clock_label.text = "🕐 %s  •  Ngày %d%s" % [DayNight.clock_text(), DayNight.day,
 		"  🌧" if DayNight.rain_amount > 0.3 else ""]
+	_minimap.visible = _blocked_count == 0
 	# Sprint auto-off when idle.
 	if joystick_vector.length() < 0.05:
 		_sprint_idle_time += _delta
@@ -361,12 +369,14 @@ func _set_drive_mode(driving: bool) -> void:
 func push_block() -> void:
 	_blocked_count += 1
 	_joystick.set_blocked(true)
+	Game.ui_blocked = true
 
 
 func pop_block() -> void:
 	_blocked_count = maxi(_blocked_count - 1, 0)
 	if _blocked_count == 0:
 		_joystick.set_blocked(false)
+		Game.ui_blocked = false
 
 
 func fade(to_black: bool, duration: float = 0.5) -> Tween:
@@ -395,12 +405,15 @@ func show_toast(message: String) -> void:
 
 
 func _on_wanted(level: int) -> void:
-	_wanted_label.text = "⭐".repeat(level)
+	_wanted_label.text = "" if level <= 0 else "⭐".repeat(level)
 
 
 func _on_objective(text: String, pos: Vector3, active: bool) -> void:
 	_objective_active = active
 	_objective_pos = pos
+	if _minimap != null:
+		_minimap.objective_active = active
+		_minimap.objective_pos = pos
 	_objective_label.text = text
 	_objective_panel.visible = active
 	if active:

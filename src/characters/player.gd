@@ -146,6 +146,8 @@ func _physics_process(delta: float) -> void:
 
 
 func _gather_move_dir() -> Vector3:
+	if Game.ui_blocked:
+		return Vector3.ZERO
 	var raw := move_input
 	var kb := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	if kb.length_squared() > raw.length_squared():
@@ -200,7 +202,8 @@ func _locomotion(delta: float) -> void:
 		_jump_buffer -= delta
 		if _try_vault():
 			_jump_buffer = 0.0
-		elif _coyote > 0.0:
+			return  # state is CLIMB now; don't let the code below overwrite it
+		if _coyote > 0.0:
 			velocity.y = JUMP_VELOCITY
 			_coyote = 0.0
 			_jump_buffer = 0.0

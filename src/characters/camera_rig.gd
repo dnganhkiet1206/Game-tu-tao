@@ -33,6 +33,9 @@ func kick(strength: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if Game.ui_blocked or get_tree().paused:
+		_touch_id = -1
+		return
 	if event is InputEventScreenTouch:
 		var touch := event as InputEventScreenTouch
 		if touch.pressed:

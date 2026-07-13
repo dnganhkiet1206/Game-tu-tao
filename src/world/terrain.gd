@@ -212,6 +212,22 @@ func water_level_at(x: float, z: float) -> float:
 	return -1000.0
 
 
+## Top-down island image for the minimap (terrain colors + water tint).
+func map_base_image() -> Image:
+	var img := Image.create_empty(N, N, false, Image.FORMAT_RGB8)
+	for iz in N:
+		for ix in N:
+			var idx := iz * N + ix
+			var h := heights[idx]
+			var c := _colors[idx]
+			var wl := water_level_at(ix * CELL, iz * CELL)
+			if wl > -100.0 and h < wl - 0.1:
+				var depth := clampf((wl - h) / 7.0, 0.0, 1.0)
+				c = Color(0.42, 0.63, 0.7).lerp(Color(0.1, 0.28, 0.46), depth)
+			img.set_pixel(ix, iz, c)
+	return img
+
+
 func ambience_at(pos: Vector3) -> Dictionary:
 	var waves := clampf(1.0 - (pos.x - 150.0) / 240.0, 0.0, 1.0)
 	var forest_rect := MapLayout.FOREST_RECT.grow(40.0)

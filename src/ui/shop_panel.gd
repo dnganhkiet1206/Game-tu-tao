@@ -123,7 +123,8 @@ func _make_row(left_text: String, btn_text: String, enabled: bool, cb: Callable)
 	btn.text = btn_text
 	btn.disabled = not enabled
 	btn.custom_minimum_size = Vector2(170, 0)
-	btn.pressed.connect(cb)
+	if cb.is_valid():
+		btn.pressed.connect(cb)
 	row.add_child(btn)
 	_rows.add_child(row)
 

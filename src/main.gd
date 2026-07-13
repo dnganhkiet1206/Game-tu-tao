@@ -97,6 +97,29 @@ func _spawn_world_vehicles() -> void:
 	var slot_2: Vector3 = world.marker_global("garage", "car_slot_2")
 	_spawn_vehicle("minica", "display", "display_minica", slot_1 + Vector3(0, 0.1, 0), 0.0)
 	_spawn_vehicle("sedan", "display", "display_sedan", slot_2 + Vector3(0, 0.1, 0), 0.0)
+	_spawn_traffic()
+
+
+## Two ambient cars patrolling the main roads (the road net is a tree, so
+## they ping-pong end to end and U-turn — enough life without traffic AI).
+func _spawn_traffic() -> void:
+	var main_street := [
+		Vector2(170, 402), Vector2(300, 402), Vector2(430, 402),
+		Vector2(560, 402), Vector2(688, 402),
+	]
+	var north_south := [
+		Vector2(401.5, 190), Vector2(401.5, 300), Vector2(401.5, 430),
+		Vector2(401.5, 560), Vector2(401.5, 630),
+	]
+	var routes := [main_street, north_south]
+	var kinds := ["civic", "pickup"]
+	for i in routes.size():
+		var route: Array = []
+		for p in routes[i]:
+			route.append(Vector3(p.x, world.terrain.height_at(p.x, p.y), p.y))
+		var start: Vector3 = route[0] if i == 0 else route[route.size() - 1]
+		var car := _spawn_vehicle(kinds[i], "npc", "traffic_%d" % i, start + Vector3(0, 0.15, 0), 90.0)
+		car.start_ai_route(route)
 
 
 func _spawn_vehicle(kind: String, owner_tag: String, id: String, pos: Vector3, rot_deg: float) -> Vehicle:

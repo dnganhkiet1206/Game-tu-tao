@@ -53,6 +53,7 @@ Build:
 
 | Vùng màn hình | Chức năng |
 |---|---|
+| Góc trên trái | **Minimap** theo người chơi (mũi tên = hướng, chấm vàng = mục tiêu) |
 | Nửa **trái** | Joystick ảo nổi (chạm đâu cần hiện đó) |
 | Nửa **phải** (vuốt) | Xoay camera |
 | Nút **❗/✋** | Tương tác theo ngữ cảnh (mở cửa, nói chuyện, mua bán, câu cá, lên xe…) |
@@ -72,6 +73,7 @@ Build:
 - **Ngủ trên giường nhà bạn** (sau 19:00) để lưu game và sang ngày mới. Lưu thủ công trong menu tạm dừng.
 - Đánh người / cướp xe dân → bị **truy nã ⭐**: chạy trốn đủ lâu, hoặc đến trạm cảnh sát nộp phạt; bị bắt thì mất tiền phạt.
 - NPC có lịch sinh hoạt thật: ngủ ở nhà, sáng đi làm, trưa ăn quán, tối dạo quảng trường/bãi biển.
+- Có **xe cộ chạy trên đường** (biết phanh tránh người) — và bạn có thể… chặn đầu cướp luôn chiếc xe đang chạy 😏.
 
 ## 7. Cấu trúc project
 

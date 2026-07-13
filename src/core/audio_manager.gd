@@ -15,6 +15,7 @@ var _ui_index: int = 0
 # Ambient layer players, keyed by name.
 var _ambient: Dictionary = {}
 var _ambient_targets: Dictionary = {}
+var _music_is_night := false
 
 
 func _ready() -> void:
@@ -137,7 +138,23 @@ func _update_ambient_targets() -> void:
 	_ambient_targets["birds"] = _mix_db(-14.0, probe.get("forest", 0.0) * daylight * (1.0 - rain) * outdoor)
 	_ambient_targets["crickets"] = _mix_db(-16.0, night * (1.0 - rain) * outdoor)
 	_ambient_targets["rain"] = _mix_db(-8.0, rain * (1.0 - indoor * 0.5))
-	_ambient_targets["music"] = -26.0
+	_update_music()
+
+
+## Crossfade between the day and night pads: duck to silence, swap, rise.
+func _update_music() -> void:
+	var want_night := DayNight.is_night()
+	var music: AudioStreamPlayer = _ambient["music"]
+	if want_night == _music_is_night:
+		_ambient_targets["music"] = -26.0
+		return
+	_ambient_targets["music"] = -60.0
+	if music.volume_db <= -50.0:
+		_music_is_night = want_night
+		var stream := get_loop_stream("music_night" if want_night else "music_day")
+		if stream != null:
+			music.stream = stream
+			music.play()
 
 
 static func _mix_db(full_db: float, amount: float) -> float:

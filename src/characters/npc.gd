@@ -60,7 +60,9 @@ func _ready() -> void:
 	_label.visibility_range_end = 16.0
 	add_child(_label)
 
-	_lane_offset = fmod(float(hash(data.id) % 100), 5.0) - 2.5
+	# Walk on the sidewalk (3.5–5 m from the road centerline), not the asphalt.
+	var side := 1.0 if hash(data.id) % 2 == 0 else -1.0
+	_lane_offset = side * (3.8 + float(hash(data.id) % 97) * 0.012)
 
 
 # --- schedule ---------------------------------------------------------------------
@@ -131,6 +133,7 @@ func tick(delta: float) -> void:
 			_talk_timer -= delta
 			if _talk_timer <= 0.0:
 				mode = Mode.IDLE
+				_goal_key = ""  # re-plan the route after the chat
 			visual.tick(delta, {"mode": "talk"})
 			return
 		Mode.FLEEING:
@@ -197,7 +200,7 @@ func _follow_path(delta: float, speed: float) -> void:
 		var dir2 := Vector3(next.x - global_position.x, 0, next.z - global_position.z)
 		if dir2.length() > 0.1:
 			var perp := dir2.normalized().cross(Vector3.UP)
-			next += perp * _lane_offset * 0.6
+			next += perp * _lane_offset
 	var to_next := next - global_position
 	to_next.y = 0.0
 	if to_next.length() < 0.8:

@@ -130,13 +130,22 @@ func _board_passenger() -> void:
 		Audio.play_at("car_door_close", seat, -4.0)
 		var spots := MapLayout.TAXI_SPOTS.duplicate()
 		spots.shuffle()
+		# Fall back to the farthest spot if none clears the distance bar.
+		var chosen: Dictionary = spots[0]
+		var chosen_d := 0.0
 		for spot in spots:
 			var p: Vector2 = spot.pos
-			if Vector2(_pickup.x, _pickup.z).distance_to(p) > 120.0:
-				var terrain: Terrain = Game.world.terrain
-				_dropoff = Vector3(p.x, terrain.height_at(p.x, p.y), p.y)
-				_dropoff_name = spot.name
+			var d := Vector2(_pickup.x, _pickup.z).distance_to(p)
+			if d > chosen_d:
+				chosen_d = d
+				chosen = spot
+			if d > 120.0:
+				chosen = spot
 				break
+		var terrain: Terrain = Game.world.terrain
+		var dest: Vector2 = chosen.pos
+		_dropoff = Vector3(dest.x, terrain.height_at(dest.x, dest.y), dest.y)
+		_dropoff_name = chosen.name
 		var trip_m := _pickup.distance_to(_dropoff)
 		_fare = int(BASE_FARE + trip_m * FARE_PER_M)
 		_expected_time = trip_m / 9.0 + 12.0
