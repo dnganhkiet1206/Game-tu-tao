@@ -330,8 +330,13 @@ func _process(_delta: float) -> void:
 			_on_interact_tap()
 		if Input.is_action_just_pressed("attack") and player.state == PlayerCharacter.State.GROUND:
 			player.try_punch()
-	if Input.is_action_just_pressed("pause") and not menus.any_open():
-		menus.open_pause()
+	if Input.is_action_just_pressed("pause"):
+		if shop_panel.visible:
+			shop_panel.close_panel()
+		elif _dialogue_panel.visible:
+			_close_dialogue()
+		elif not menus.any_open():
+			menus.open_pause()
 	_update_fishing()
 	_arrow_layer.queue_redraw()
 

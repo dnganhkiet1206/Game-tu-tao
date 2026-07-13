@@ -6,7 +6,6 @@ var item_id := "log"
 var count := 1
 var _mesh: MeshInstance3D
 var _time := 0.0
-var _base_y := 0.0
 var _collected := false
 
 
@@ -36,8 +35,6 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_time += delta
-	if _base_y == 0.0:
-		_base_y = position.y
 	_mesh.position.y = 0.12 + sin(_time * 2.2) * 0.08
 	_mesh.rotation.y += delta * 1.2
 

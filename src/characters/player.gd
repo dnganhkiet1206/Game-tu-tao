@@ -97,8 +97,10 @@ func _on_interact_lost(node: Node3D) -> void:
 func current_interactable() -> Node3D:
 	var best: Node3D = null
 	var best_d := 99.0
+	var stale: Array = []
 	for node in _interactables:
 		if not is_instance_valid(node):
+			stale.append(node)  # freed nodes never emit body_exited
 			continue
 		if node.has_method("can_interact") and not node.can_interact(self):
 			continue
@@ -106,6 +108,8 @@ func current_interactable() -> Node3D:
 		if d < best_d:
 			best_d = d
 			best = node
+	for node in stale:
+		_interactables.erase(node)
 	return best
 
 
@@ -454,6 +458,20 @@ func try_punch() -> void:
 			if npc.has_method("on_punched"):
 				npc.on_punched(self)
 				hit_something = true
+				break
+	# Smashing parked cars counts as vandalism (with a per-car cooldown so
+	# one flurry of punches doesn't stack stars instantly).
+	if not hit_something:
+		for car in get_tree().get_nodes_in_group("vehicle"):
+			var to_car: Vector3 = car.global_position - global_position
+			if to_car.length() < 2.6 and forward.dot(to_car.normalized()) > 0.3:
+				hit_something = true
+				var now := Time.get_ticks_msec()
+				var last: int = car.get_meta("last_vandal_ms", -100000)
+				if now - last > 8000:
+					car.set_meta("last_vandal_ms", now)
+					Events.crime_committed.emit("vandalism", car.global_position)
+					Events.toast.emit("Bạn vừa đập phá xe của người khác!")
 				break
 	if hit_something:
 		Audio.play_at("punch", origin + forward, 2.0)

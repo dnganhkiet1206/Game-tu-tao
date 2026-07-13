@@ -71,7 +71,7 @@ Build:
 - Nhận **giao hàng** 📦 trước cửa tạp hoá → giao 3 kiện tới các nhà dân, đủ nhanh có thưởng.
 - Tiền dùng để: mua **ô tô** ở Gara Chú Tư, **nâng cấp nội thất nhà** (3 cấp), mua đồ ăn.
 - **Ngủ trên giường nhà bạn** (sau 19:00) để lưu game và sang ngày mới. Lưu thủ công trong menu tạm dừng.
-- Đánh người / cướp xe dân → bị **truy nã ⭐**: chạy trốn đủ lâu, hoặc đến trạm cảnh sát nộp phạt; bị bắt thì mất tiền phạt.
+- Đánh người / cướp xe / **đập phá xe dân** → bị **truy nã ⭐**: chạy trốn đủ lâu, hoặc đến trạm cảnh sát nộp phạt; bị bắt thì mất tiền phạt.
 - NPC có lịch sinh hoạt thật: ngủ ở nhà, sáng đi làm, trưa ăn quán, tối dạo quảng trường/bãi biển.
 - Có **xe cộ chạy trên đường** (biết phanh tránh người) — và bạn có thể… chặn đầu cướp luôn chiếc xe đang chạy 😏.
 

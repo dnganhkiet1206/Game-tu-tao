@@ -75,7 +75,7 @@ func set_open(value: bool) -> void:
 ## Opens, then closes again after a beat (used by NPCs walking through).
 func open_for(seconds: float = 1.6) -> void:
 	set_open(true)
-	var timer := get_tree().create_timer(seconds)
+	var timer := get_tree().create_timer(seconds, false)
 	timer.timeout.connect(func() -> void:
 		if is_instance_valid(self):
 			set_open(false)

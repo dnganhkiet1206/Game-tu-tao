@@ -80,7 +80,8 @@ func _show_intro() -> void:
 	]
 	var delay := 3.0
 	for tip in tips:
-		var timer := get_tree().create_timer(delay)
+		# process_always=false so tips don't tick away behind the pause menu.
+		var timer := get_tree().create_timer(delay, false)
 		timer.timeout.connect(func() -> void: Events.toast.emit("💡 " + tip))
 		delay += 3.4
 

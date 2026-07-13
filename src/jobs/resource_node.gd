@@ -117,7 +117,8 @@ func _deplete(from_pos: Vector3) -> void:
 		Audio.play_at("rock_break", global_position, 2.0)
 		_mesh.visible = false
 		_spawn_yield()
-	var timer := get_tree().create_timer(respawn_seconds)
+	# process_always=false: the respawn clock respects game pause.
+	var timer := get_tree().create_timer(respawn_seconds, false)
 	timer.timeout.connect(_respawn)
 
 

@@ -26,10 +26,16 @@ func _ready() -> void:
 
 
 func _on_entered_vehicle(vehicle: Node3D) -> void:
-	if phase == Phase.OFF and vehicle.is_in_group("taxi"):
-		Events.job_started.emit("taxi")
-		Events.toast.emit("🚕 Chế độ taxi: đón khách theo mũi tên!")
-		_next_fare()
+	if phase != Phase.OFF or not vehicle.is_in_group("taxi"):
+		return
+	# One objective arrow at a time: finish the delivery round first.
+	var delivery := get_tree().get_first_node_in_group("delivery_job")
+	if delivery != null and delivery.active:
+		Events.toast.emit("Giao nốt kiện hàng đã rồi hãy chạy taxi nhé!")
+		return
+	Events.job_started.emit("taxi")
+	Events.toast.emit("🚕 Chế độ taxi: đón khách theo mũi tên!")
+	_next_fare()
 
 
 func _on_exited_vehicle(vehicle: Node3D) -> void:
