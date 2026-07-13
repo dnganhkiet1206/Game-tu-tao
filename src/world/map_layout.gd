@@ -47,6 +47,7 @@ const BUILDINGS := [
 	{"id": "market", "kind": "market", "name": "Chợ Cá Bến Sóng", "pos": Vector2(170, 420), "size": Vector3(14, 4.2, 10), "rot": 180.0, "color": Color(0.62, 0.78, 0.86)},
 	{"id": "sawmill", "kind": "sawmill", "name": "Xưởng Gỗ Sáu Bào", "pos": Vector2(300, 207), "size": Vector3(16, 4.6, 10), "rot": 0.0, "color": Color(0.78, 0.62, 0.45)},
 	{"id": "depot", "kind": "depot", "name": "Trạm Thu Quặng", "pos": Vector2(622, 540), "size": Vector3(12, 4.2, 8), "rot": 90.0, "color": Color(0.66, 0.6, 0.55)},
+	{"id": "fuel", "kind": "fuel", "name": "Trạm Xăng Hòn Gió", "pos": Vector2(566, 384), "size": Vector3(9, 3.8, 7), "rot": 0.0, "color": Color(0.92, 0.4, 0.32)},
 	{"id": "town_house_1", "kind": "home", "name": "", "pos": Vector2(378, 384), "size": Vector3(10, 4.4, 8), "rot": 0.0, "color": Color(0.9, 0.86, 0.7)},
 	{"id": "town_house_2", "kind": "home", "name": "", "pos": Vector2(426, 384), "size": Vector3(10, 4.6, 8), "rot": 0.0, "color": Color(0.85, 0.72, 0.6)},
 	{"id": "player_home", "kind": "player_home", "name": "Nhà Của Bạn", "pos": Vector2(500, 284), "size": Vector3(11, 4.2, 8.5), "rot": 0.0, "color": Color(0.86, 0.89, 0.82)},

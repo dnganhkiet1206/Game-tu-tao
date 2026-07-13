@@ -6,6 +6,8 @@ extends Area3D
 var prompt: String = "Tương tác"
 var callback: Callable = Callable()
 var enabled: bool = true
+## Optional dynamic prompt; overrides `prompt` when set.
+var prompt_provider: Callable = Callable()
 
 
 static func make(pos: Vector3, radius: float, p_prompt: String, p_callback: Callable) -> InteractZone:
@@ -25,6 +27,8 @@ static func make(pos: Vector3, radius: float, p_prompt: String, p_callback: Call
 
 
 func get_prompt() -> String:
+	if prompt_provider.is_valid():
+		return prompt_provider.call()
 	return prompt
 
 

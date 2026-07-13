@@ -97,6 +97,10 @@ func _refresh() -> void:
 			_title.text = "🍚 Quán Cơm Hải Âu"
 			for item_id in ["banh_mi", "ca_phe"]:
 				_buy_row(item_id)
+		"fuel_shop":
+			_title.text = "⛽ Trạm Xăng Hòn Gió"
+			for item_id in ["fuel_can", "banh_mi", "ca_phe"]:
+				_buy_row(item_id)
 		"garage":
 			_title.text = "🚗 Gara Chú Tư"
 			for car_id in Game.CAR_CATALOG:

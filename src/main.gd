@@ -77,6 +77,7 @@ func _show_intro() -> void:
 		"Kiếm tiền: câu cá, chặt gỗ, đào quặng, chạy taxi, giao hàng.",
 		"Rìu và cuốc chim bán ở Tạp hoá Cô Ba.",
 		"Về nhà ngủ sau 19:00 để lưu game và sang ngày mới.",
+		"Xe chạy tốn xăng — để ý đồng hồ ⛽ và ghé Trạm Xăng Hòn Gió.",
 	]
 	var delay := 3.0
 	for tip in tips:

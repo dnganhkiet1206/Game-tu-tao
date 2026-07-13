@@ -408,6 +408,72 @@ def gen_music():
     ], "music_night", 0.5)
 
 
+def gen_fuel():
+    # Pump loop: motor hum + liquid gurgle (seamless 2.4 s).
+    dur = 2.4
+    n = int(dur * SR)
+    t = t_axis(dur)
+    hum = np.sin(2 * math.pi * 118 * t) * 0.4 + np.sin(2 * math.pi * 236 * t) * 0.15
+    gurgle = band(noise(dur), 250, 900)
+    gurgle *= 0.5 + 0.5 * np.sin(2 * math.pi * 5 / dur * np.round(dur * 5 / dur) * t)  # whole cycles
+    gurgle *= 0.55
+    ticks = np.zeros(n)
+    per = int(SR / 3.3333)
+    for i in range(0, n - int(0.01 * SR), per):
+        seg = band(noise(0.008), 1500, 5000) * env_ad(int(0.008 * SR), 0.0005, 0.006)
+        ticks[i:i + len(seg)] += seg * 0.35
+    write("fuel_pump", loopify(hum + gurgle + ticks, 0.2), 0.5)
+
+    # Pouring from a jerry can: descending glugs + liquid noise.
+    dur = 2.2
+    n = int(dur * SR)
+    x = band(noise(dur), 400, 2400) * 0.3 * env_ad(n, 0.1, 1.2, 1.2)
+    for i in range(7):
+        p = int(i * 0.3 * SR)
+        d = 0.16
+        f = 340 - i * 18
+        seg = sweep(f, f * 0.55, d) * env_ad(int(d * SR), 0.01, 0.1)
+        x[p:p + len(seg)] += seg * 0.8
+    write("fuel_pour", x, 0.6)
+
+    # Trunk latch pop + hinge.
+    n = int(0.45 * SR)
+    x = band(noise(0.45), 900, 4000) * env_ad(n, 0.001, 0.02)
+    x += sine(140, 0.45) * env_ad(n, 0.001, 0.05) * 0.7
+    creak = sweep(320, 520, 0.45) * env_ad(n, 0.06, 0.3, 1.6) * 0.25
+    write("trunk_open", x + creak, 0.6)
+
+    n = int(0.3 * SR)
+    x = sine(70, 0.3) * env_ad(n, 0.001, 0.07)
+    x += band(noise(0.3), 250, 1500) * env_ad(n, 0.001, 0.03) * 0.7
+    write("trunk_close", x, 0.8)
+
+    # Engine sputtering out (fuel starved).
+    dur = 1.3
+    n = int(dur * SR)
+    t = t_axis(dur)
+    freq = np.linspace(55, 16, n)
+    phase = np.cumsum(freq) / SR
+    eng = np.sin(2 * math.pi * phase) + 0.4 * np.sin(4 * math.pi * phase)
+    stutter = (np.sin(2 * math.pi * (9 - 5 * t / dur) * t) > -0.3).astype(float)
+    x = eng * stutter * np.linspace(1.0, 0.0, n) ** 0.7
+    clunk = np.zeros(n)
+    p = int(1.05 * SR)
+    seg = sine(85, 0.2) * env_ad(int(0.2 * SR), 0.001, 0.06)
+    clunk[p:p + len(seg)] += seg
+    write("engine_die", x * 0.7 + clunk, 0.65)
+
+    # Low-fuel warning: two short beeps.
+    dur = 0.5
+    n = int(dur * SR)
+    x = np.zeros(n)
+    for i in range(2):
+        p = int(i * 0.22 * SR)
+        seg = sine(1180, 0.12) * env_ad(int(0.12 * SR), 0.005, 0.1)
+        x[p:p + len(seg)] += seg
+    write("beep_low", x, 0.35)
+
+
 if __name__ == "__main__":
     os.makedirs(OUT_DIR, exist_ok=True)
     print("Generating audio ->", os.path.abspath(OUT_DIR))
@@ -418,4 +484,5 @@ if __name__ == "__main__":
     gen_ui()
     gen_ambience()
     gen_music()
+    gen_fuel()
     print("Done.")

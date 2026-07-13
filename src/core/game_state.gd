@@ -16,6 +16,7 @@ const ITEMS := {
 	"ore_gold": {"name": "Quặng vàng", "sell": 150, "buy": 0, "icon": "✨"},
 	"banh_mi": {"name": "Bánh mì", "sell": 3, "buy": 8, "icon": "🥖"},
 	"ca_phe": {"name": "Cà phê sữa", "sell": 4, "buy": 10, "icon": "☕"},
+	"fuel_can": {"name": "Can xăng 10L", "sell": 10, "buy": 25, "icon": "⛽"},
 	"rod": {"name": "Cần câu", "sell": 0, "buy": 60, "icon": "🎣"},
 	"axe": {"name": "Rìu chặt gỗ", "sell": 0, "buy": 90, "icon": "🪓"},
 	"pickaxe": {"name": "Cuốc chim", "sell": 0, "buy": 120, "icon": "⛏"},
@@ -49,6 +50,7 @@ var stats: Dictionary = {
 	"fines_paid": 0,
 }
 var quality: int = 1  # 0 = low, 1 = medium, 2 = high
+var fuel_levels: Dictionary = {}  # vehicle id -> liters, persisted
 var ui_blocked: bool = false  # true while a modal panel / menu / fade owns input
 var player: Node3D = null
 var world: Node3D = null
@@ -147,6 +149,7 @@ func save_game() -> void:
 		"house_tier": house_tier,
 		"stats": stats,
 		"quality": quality,
+		"fuel_levels": fuel_levels,
 		"time_hours": DayNight.time_hours,
 		"day": DayNight.day,
 	}
@@ -183,6 +186,7 @@ func load_game() -> bool:
 	for key in saved_stats:
 		stats[key] = saved_stats[key]
 	quality = int(data.get("quality", 1))
+	fuel_levels = data.get("fuel_levels", {})
 	DayNight.time_hours = float(data.get("time_hours", 8.0))
 	DayNight.day = int(data.get("day", 1))
 	pending_spawn = {}
@@ -198,6 +202,7 @@ func new_game() -> void:
 	money = 150
 	inventory = {"rod": 1, "banh_mi": 2}
 	owned_cars = []
+	fuel_levels = {}
 	house_tier = 0
 	for key in stats:
 		stats[key] = 0

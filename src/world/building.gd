@@ -110,7 +110,7 @@ func _side_walls(w: float, h: float, d: float, color: Color) -> void:
 
 func _roof(w: float, h: float, d: float, _wall: Color) -> void:
 	var kind_id: String = data.kind
-	var flat := kind_id in ["garage", "police", "hospital", "market", "depot", "shop"]
+	var flat := kind_id in ["garage", "police", "hospital", "market", "depot", "shop", "fuel"]
 	if flat:
 		var roof_c := Color(0.45, 0.44, 0.42)
 		Props.add_box(_st, Vector3(0, h + 0.12, 0), Vector3(w + 0.5, 0.24, d + 0.5), roof_c)
@@ -257,6 +257,12 @@ func _furnish(w: float, h: float, d: float) -> void:
 			_counter(Vector3(w * 0.5 - 1.4, 0, -d * 0.5 + 1.2), 2.2)
 			markers["vendor"] = Vector3(w * 0.5 - 1.4, 0.15, -d * 0.5 + 0.7)
 			markers["counter"] = Vector3(w * 0.5 - 1.4, 0.15, -d * 0.5 + 2.2)
+		"fuel":
+			_counter(Vector3(0, 0, -d * 0.5 + 1.2), w * 0.5)
+			_shelf(Vector3(-w * 0.5 + 0.5, 0, 0.6), PI * 0.5)
+			_crate(Vector3(w * 0.5 - 0.9, 0, 0.9), Color(0.85, 0.28, 0.24))
+			markers["vendor"] = Vector3(0, 0.15, -d * 0.5 + 0.6)
+			markers["counter"] = Vector3(0, 0.15, -d * 0.5 + 2.2)
 		"depot":
 			_counter(Vector3(0, 0, -d * 0.5 + 1.2), w * 0.5)
 			_crate(Vector3(-w * 0.5 + 0.8, 0, 1.2), Color(0.78, 0.47, 0.26))

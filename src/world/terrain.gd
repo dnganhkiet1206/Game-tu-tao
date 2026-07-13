@@ -125,6 +125,9 @@ func _classify(x: float, z: float, h: float, road_d: float, road_w: float) -> in
 	# Town plaza around the crossing.
 	if x > 404.0 and x < 444.0 and z > 376.0 and z < 397.0:
 		return Surf.PAVEMENT
+	# Gas-station forecourt (cars roll off the road onto the pumps).
+	if x > 552.0 and x < 580.0 and z > 387.0 and z < 397.0:
+		return Surf.PAVEMENT
 	var qd := Vector2(x, z).distance_to(MapLayout.QUARRY_CENTER)
 	if qd < 58.0:
 		return Surf.ROCK

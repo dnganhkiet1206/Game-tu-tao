@@ -349,6 +349,8 @@ func _build_street_furniture() -> void:
 		bench.rotation.y = spot[1]
 		add_child(bench)
 
+	_build_fuel_forecourt()
+
 	# Log pile beside the sawmill.
 	var pile := StaticBody3D.new()
 	pile.collision_layer = Layers.WORLD
@@ -366,6 +368,48 @@ func _build_street_furniture() -> void:
 	add_child(pile)
 
 
+## Gas-station forecourt: canopy on four posts + two pumps facing the road.
+func _build_fuel_forecourt() -> void:
+	var center := Vector2(566.0, 392.0)
+	var ground := terrain.height_at(center.x, center.y)
+	var st := Props.begin()
+	var post := Color(0.75, 0.76, 0.78)
+	for sx in [-4.6, 4.6]:
+		for sz in [-2.2, 2.2]:
+			Props.add_cylinder(st, Vector3(sx, 0, sz), 0.14, 0.12, 3.4, 6, post, false)
+	Props.add_box(st, Vector3(0, 3.55, 0), Vector3(11.5, 0.3, 6.0), Color(0.92, 0.4, 0.32))
+	Props.add_box(st, Vector3(0, 3.42, 0), Vector3(11.7, 0.06, 6.2), Color(0.95, 0.95, 0.9))
+	var canopy := StaticBody3D.new()
+	canopy.collision_layer = Layers.WORLD
+	canopy.collision_mask = 0
+	var mesh := MeshInstance3D.new()
+	mesh.mesh = Props.commit(st)
+	canopy.add_child(mesh)
+	var roof_col := CollisionShape3D.new()
+	var roof_shape := BoxShape3D.new()
+	roof_shape.size = Vector3(11.5, 0.4, 6.0)
+	roof_col.shape = roof_shape
+	roof_col.position = Vector3(0, 3.55, 0)
+	canopy.add_child(roof_col)
+	for sx in [-4.6, 4.6]:
+		for sz in [-2.2, 2.2]:
+			var post_col := CollisionShape3D.new()
+			var post_shape := CylinderShape3D.new()
+			post_shape.radius = 0.15
+			post_shape.height = 3.4
+			post_col.shape = post_shape
+			post_col.position = Vector3(sx, 1.7, sz)
+			canopy.add_child(post_col)
+	canopy.position = Vector3(center.x, ground, center.y)
+	add_child(canopy)
+
+	for sx in [-2.6, 2.6]:
+		var pump := FuelPump.new()
+		pump.position = Vector3(center.x + sx, ground, center.y)
+		pump.rotation.y = PI * 0.5
+		add_child(pump)
+
+
 # --- interact zones ---------------------------------------------------------------------
 
 func _build_interact_zones() -> void:
@@ -376,6 +420,7 @@ func _build_interact_zones() -> void:
 	_counter_zone("sawmill", "Bán gỗ", func(_p: Node3D) -> void: Events.shop_requested.emit("sell_wood"))
 	_counter_zone("depot", "Bán quặng", func(_p: Node3D) -> void: Events.shop_requested.emit("sell_ore"))
 	_counter_zone("police", "Nộp phạt", func(_p: Node3D) -> void: Events.shop_requested.emit("police"))
+	_counter_zone("fuel", "Mua đồ", func(_p: Node3D) -> void: Events.shop_requested.emit("fuel_shop"))
 	_counter_zone("hospital", "Khám bệnh", func(_p: Node3D) -> void: Events.shop_requested.emit("hospital"))
 
 	_add_home_zones()

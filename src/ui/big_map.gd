@@ -12,6 +12,7 @@ const KIND_ICONS := {
 	"cafe": ["🍜", false],
 	"garage": ["🚗", true],
 	"police": ["🚓", true],
+	"fuel": ["⛽", true],
 	"hospital": ["🏥", true],
 	"market": ["🐟", true],
 	"sawmill": ["🪵", true],

@@ -11,6 +11,7 @@ const CAST := [
 	{"id": "chu_sau", "name": "Chú Sáu Bào", "role": "vendor", "work": "sawmill", "home": "", "anim": "idle"},
 	{"id": "co_quyen", "name": "Cô Quyên", "role": "vendor", "work": "depot", "home": "house_8", "anim": "idle"},
 	{"id": "di_bay", "name": "Dì Bảy", "role": "vendor", "work": "cafe", "home": "", "anim": "idle"},
+	{"id": "chu_hai_xang", "name": "Chú Hai Xăng", "role": "vendor", "work": "fuel", "home": "house_1", "anim": "idle"},
 	{"id": "y_ta_lan", "name": "Y tá Lan", "role": "vendor", "work": "hospital", "home": "house_2", "anim": "idle"},
 	{"id": "y_ta_hung", "name": "Y tá Hùng", "role": "vendor", "work": "hospital", "home": "house_6", "anim": "idle"},
 

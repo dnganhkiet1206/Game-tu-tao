@@ -310,8 +310,12 @@ func _process(_delta: float) -> void:
 	if player == null or not is_instance_valid(player):
 		return
 	player.move_input = Vector2.ZERO if _blocked_count > 0 else joystick_vector
-	_clock_label.text = "🕐 %s  •  Ngày %d%s" % [DayNight.clock_text(), DayNight.day,
-		"  🌧" if DayNight.rain_amount > 0.3 else ""]
+	var fuel_text := ""
+	if player.state == PlayerCharacter.State.DRIVING and player.vehicle != null:
+		var pct := int(player.vehicle.fuel / player.vehicle.fuel_capacity * 100.0)
+		fuel_text = "  •  ⛽ %d%%%s" % [pct, " ⚠" if pct <= 15 else ""]
+	_clock_label.text = "🕐 %s  •  Ngày %d%s%s" % [DayNight.clock_text(), DayNight.day,
+		"  🌧" if DayNight.rain_amount > 0.3 else "", fuel_text]
 	_minimap.visible = _blocked_count == 0
 	# Sprint auto-off when idle.
 	if joystick_vector.length() < 0.05:

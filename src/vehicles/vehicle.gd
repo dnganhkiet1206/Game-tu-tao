@@ -5,12 +5,14 @@ extends CharacterBody3D
 ## with speed pitch, headlights at night. Parked cars sleep (no physics).
 
 const KINDS := {
-	"taxi": {"color": Color(0.95, 0.78, 0.1), "top_speed": 17.0, "accel": 9.0, "seats_sign": true},
-	"civic": {"color": Color(0.4, 0.55, 0.7), "top_speed": 17.0, "accel": 8.5, "seats_sign": false},
-	"pickup": {"color": Color(0.45, 0.5, 0.4), "top_speed": 15.0, "accel": 8.0, "seats_sign": false},
-	"minica": {"color": Color(0.85, 0.35, 0.2), "top_speed": 16.0, "accel": 8.5, "seats_sign": false},
-	"sedan": {"color": Color(0.15, 0.4, 0.75), "top_speed": 22.0, "accel": 11.0, "seats_sign": false},
+	"taxi": {"color": Color(0.95, 0.78, 0.1), "top_speed": 17.0, "accel": 9.0, "tank": 35.0},
+	"civic": {"color": Color(0.4, 0.55, 0.7), "top_speed": 17.0, "accel": 8.5, "tank": 30.0},
+	"pickup": {"color": Color(0.45, 0.5, 0.4), "top_speed": 15.0, "accel": 8.0, "tank": 40.0},
+	"minica": {"color": Color(0.85, 0.35, 0.2), "top_speed": 16.0, "accel": 8.5, "tank": 25.0},
+	"sedan": {"color": Color(0.15, 0.4, 0.75), "top_speed": 22.0, "accel": 11.0, "tank": 35.0},
 }
+
+const CAN_LITERS := 10.0
 
 const STEER_SPEED := 1.9
 const BRAKE_DECEL := 14.0
@@ -29,6 +31,18 @@ const AI_SPEED := 7.5
 var ai_route: Array = []
 var _ai_index := 0
 var _ai_step := 1
+
+# Fuel. AI/display cars never consume.
+var fuel := 20.0
+var fuel_capacity := 30.0
+var _fuel_warned := false
+var _engine_dead := false
+var _fuel_saved_at := 0.0
+
+# Trunk (not on pickups — they have an open bed).
+var is_trunk_open := false
+var trunk_has_can := false
+var _trunk: Node3D = null
 
 var _door_l: Node3D
 var _wheels: Array[Node3D] = []
@@ -73,6 +87,11 @@ func _ready() -> void:
 	_engine.volume_db = -60.0
 	add_child(_engine)
 
+	fuel_capacity = KINDS[kind].tank
+	fuel = float(Game.fuel_levels.get(vid, fuel_capacity * 0.65))
+	_fuel_saved_at = fuel
+	trunk_has_can = owner_tag == "player" or kind == "taxi"
+
 	if owner_tag == "display":
 		# Showroom car: not enterable, shows its price tag instead.
 		var tag := Label3D.new()
@@ -87,7 +106,10 @@ func _ready() -> void:
 		add_child(tag)
 	else:
 		var zone := InteractZone.make(Vector3(1.35, 0.8, 0.4), 1.5, _door_prompt(), _on_enter_requested)
+		zone.prompt_provider = _door_prompt
 		add_child(zone)
+		if kind != "pickup":
+			_build_trunk()
 
 	set_physics_process(false)
 	DayNight.hour_changed.connect(func(_h: int) -> void: _update_lights())
@@ -95,9 +117,94 @@ func _ready() -> void:
 
 
 func _door_prompt() -> String:
+	if fuel <= 2.0 and Game.count_item("fuel_can") > 0 and driver == null:
+		return "Đổ can xăng (+%dL)" % int(CAN_LITERS)
 	if owner_tag == "npc":
 		return "Cướp xe ⚠"
 	return "Lái xe"
+
+
+func _build_trunk() -> void:
+	_trunk = Node3D.new()
+	_trunk.position = Vector3(0, 0.88, -1.16)
+	var lid := MeshInstance3D.new()
+	lid.mesh = Humanoid._box(Vector3(1.6, 0.07, 0.82))
+	lid.material_override = Palette.mat(KINDS[kind].color.darkened(0.08))
+	lid.position = Vector3(0, 0, -0.41)
+	_trunk.add_child(lid)
+	add_child(_trunk)
+	var zone := InteractZone.make(Vector3(0, 0.8, -2.3), 1.35, "Mở cốp", _on_trunk_interact)
+	zone.prompt_provider = _trunk_prompt
+	add_child(zone)
+
+
+func _trunk_prompt() -> String:
+	if driver != null:
+		return ""
+	if not is_trunk_open:
+		return "Mở cốp"
+	if trunk_has_can:
+		return "Lấy can xăng"
+	return "Đóng cốp"
+
+
+func _on_trunk_interact(_player: Node3D) -> void:
+	if driver != null:
+		return
+	if not is_trunk_open:
+		_set_trunk(true)
+	elif trunk_has_can:
+		trunk_has_can = false
+		Game.add_item("fuel_can", 1)
+		Audio.play_at("pickup", global_position, -2.0)
+		Events.toast.emit("Lấy can xăng dự phòng từ cốp xe")
+	else:
+		_set_trunk(false)
+
+
+func _set_trunk(open: bool) -> void:
+	is_trunk_open = open
+	var tween := create_tween()
+	tween.set_trans(Tween.TRANS_CUBIC)
+	tween.set_ease(Tween.EASE_OUT)
+	tween.tween_property(_trunk, "rotation:x", deg_to_rad(-72.0) if open else 0.0, 0.4)
+	Audio.play_at("trunk_open" if open else "trunk_close", to_global(Vector3(0, 0.9, -1.9)), -2.0)
+
+
+# --- fuel -----------------------------------------------------------------------
+
+func refuel(liters: float) -> void:
+	fuel = minf(fuel + liters, fuel_capacity)
+	_save_fuel()
+	if fuel > 0.5:
+		_fuel_warned = false
+		if _engine_dead:
+			_engine_dead = false
+			if driver != null:
+				Audio.play_at("car_start", global_position, 0.0)
+
+
+func _save_fuel() -> void:
+	Game.fuel_levels[vid] = fuel
+	_fuel_saved_at = fuel
+
+
+func _consume_fuel(delta: float, throttle: float, top: float) -> void:
+	if fuel <= 0.0:
+		return
+	var burn := 0.012 + absf(throttle) * 0.05 + absf(speed) / top * 0.02
+	fuel = maxf(fuel - burn * delta, 0.0)
+	if absf(_fuel_saved_at - fuel) > 0.5:
+		_save_fuel()
+	if not _fuel_warned and fuel < fuel_capacity * 0.15:
+		_fuel_warned = true
+		Audio.play_ui("beep_low")
+		Events.toast.emit("⛽ Sắp hết xăng! Ghé Trạm Xăng Hòn Gió.")
+	if fuel <= 0.0 and not _engine_dead:
+		_engine_dead = true
+		_save_fuel()
+		Audio.play_at("engine_die", global_position, 2.0)
+		Events.toast.emit("Hết xăng! Dùng can xăng hoặc gọi trợ giúp ở trạm xăng.")
 
 
 func _build_visual() -> void:
@@ -196,6 +303,13 @@ func can_interact(_player: Node3D) -> bool:
 
 func _on_enter_requested(player: Node3D) -> void:
 	if driver != null or not player is PlayerCharacter:
+		return
+	# Empty tank + a jerry can in hand: pour instead of entering.
+	if fuel <= 2.0 and Game.count_item("fuel_can") > 0:
+		if Game.remove_item("fuel_can", 1):
+			Audio.play_at("fuel_pour", global_position, 0.0)
+			refuel(CAN_LITERS)
+			Events.toast.emit("Đã đổ %dL xăng từ can" % int(CAN_LITERS))
 		return
 	# A patrolling AI car pulls over immediately — the seat must hold still
 	# while the enter animation plays.
@@ -296,8 +410,14 @@ func set_driver(p_driver: Node3D) -> void:
 	driver = p_driver
 	ai_route = []  # a stolen patrol car stays stolen
 	close_door()
+	if is_trunk_open:
+		_set_trunk(false)
 	set_physics_process(true)
-	Audio.play_at("car_start", global_position, 0.0)
+	if fuel > 0.0:
+		Audio.play_at("car_start", global_position, 0.0)
+	else:
+		Audio.play_at("engine_die", global_position, 0.0)
+		Events.toast.emit("Xe này hết xăng — cần can xăng hoặc trạm xăng.")
 	_engine.play()
 	_update_lights()
 
@@ -350,6 +470,11 @@ func _physics_process(delta: float) -> void:
 				steer = -jv.x
 			if absf(jv.y) > 0.5 and absf(throttle) < 0.1:
 				throttle = -signf(jv.y)
+
+	# Fuel: burn while the engine runs; a dead engine gives no drive.
+	_consume_fuel(delta, throttle, top)
+	if fuel <= 0.0:
+		throttle = 0.0
 
 	# Speed integration.
 	if throttle > 0.0:
@@ -407,6 +532,9 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed("horn"):
 		Audio.play_at("car_horn", global_position, 2.0)
 
-	# Engine sound follows speed.
-	_engine.pitch_scale = 0.75 + clampf(absf(speed) / top, 0.0, 1.0) * 0.85
-	_engine.volume_db = lerpf(-14.0, -4.0, clampf(absf(speed) / top, 0.0, 1.0) + absf(throttle) * 0.25)
+	# Engine sound follows speed; a dead engine is silent.
+	if fuel <= 0.0:
+		_engine.volume_db = lerpf(_engine.volume_db, -60.0, minf(delta * 4.0, 1.0))
+	else:
+		_engine.pitch_scale = 0.75 + clampf(absf(speed) / top, 0.0, 1.0) * 0.85
+		_engine.volume_db = lerpf(-14.0, -4.0, clampf(absf(speed) / top, 0.0, 1.0) + absf(throttle) * 0.25)

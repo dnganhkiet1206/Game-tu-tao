@@ -74,6 +74,7 @@ Build:
 - Đánh người / cướp xe / **đập phá xe dân** → bị **truy nã ⭐**: chạy trốn đủ lâu, hoặc đến trạm cảnh sát nộp phạt; bị bắt thì mất tiền phạt.
 - NPC có lịch sinh hoạt thật: ngủ ở nhà, sáng đi làm, trưa ăn quán, tối dạo quảng trường/bãi biển.
 - Có **xe cộ chạy trên đường** (biết phanh tránh người) — và bạn có thể… chặn đầu cướp luôn chiếc xe đang chạy 😏.
+- **Xe tốn xăng** ⛽: đồng hồ xăng hiện khi lái, sắp cạn có bíp cảnh báo, hết xăng là chết máy giữa đường. Đổ xăng ở **Trạm Xăng Hòn Gió** (2₫/L, lái xe vào trụ bơm), hoặc mua **can xăng 10L** để cứu hộ. Taxi và xe mua ở gara có sẵn một can dự phòng — **mở cốp xe** ra mà lấy!
 
 ## 7. Cấu trúc project
 

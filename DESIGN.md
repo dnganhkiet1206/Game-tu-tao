@@ -63,6 +63,7 @@ Scene duy nhất main.tscn → src/main.gd dựng:
 | Minimap | **Có** — texture đảo bake 1 lần từ dữ liệu địa hình (201×201 px), cửa sổ zoom 250 m theo người chơi + mũi tên hướng + chấm mục tiêu; kèm mũi tên dẫn đường trên màn hình chính | Chi phí ~0 (1 texture nhỏ + vài lệnh draw 2D mỗi frame). |
 | Đánh nhau đầy đủ | 1 đòn đấm + NPC bỏ chạy | Combat sâu không phải trọng tâm của IP đời-sống này. |
 | Hệ đói/khát/máu | Chưa có (đồ ăn là flavor) | Tránh phình hệ thống; móc sẵn qua item `banh_mi`/`ca_phe`. |
+| Nhiên liệu xe | **Có** — bình xăng theo loại xe (25–40L), tiêu hao theo ga/tốc độ, chết máy khi cạn, trạm xăng + trụ bơm tính tiền theo lít, can xăng cứu hộ 10L, cốp xe chứa can dự phòng; mức xăng được lưu trong save | AI xe tuần tra không tốn xăng (tránh xe ma chết giữa đường). |
 
 ## 5. Lộ trình phát triển tiếp (đề xuất theo thứ tự)
 
