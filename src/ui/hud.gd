@@ -37,6 +37,7 @@ var _objective_active := false
 var _sprint_idle_time := 0.0
 var _blocked_count := 0
 var _fishing_ctl: Node = null  # cached fishing controller (group lookup once)
+var _underwater_rect: ColorRect
 
 var shop_panel: ShopPanel
 var menus: Menus
@@ -54,6 +55,14 @@ func _ready() -> void:
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.theme = _build_theme()
 	add_child(_root)
+
+	# Sits under every other HUD element; shown while the camera is submerged.
+	_underwater_rect = ColorRect.new()
+	_underwater_rect.color = Color(0.05, 0.25, 0.35, 0.4)
+	_underwater_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_underwater_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_underwater_rect.visible = false
+	_root.add_child(_underwater_rect)
 
 	_build_arrow_layer()
 	_build_joystick()
@@ -318,6 +327,8 @@ func _process(delta: float) -> void:
 	_clock_label.text = "🕐 %s  •  Ngày %d%s%s" % [DayNight.clock_text(), DayNight.day,
 		"  🌧" if DayNight.rain_amount > 0.3 else "", fuel_text]
 	_minimap.visible = _blocked_count == 0
+	_underwater_rect.visible = player.camera_rig != null \
+		and player.camera_rig.get("underwater") == true
 	# Sprint auto-off when idle.
 	if joystick_vector.length() < 0.05:
 		_sprint_idle_time += delta

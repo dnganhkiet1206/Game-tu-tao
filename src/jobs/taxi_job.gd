@@ -134,7 +134,9 @@ func _board_passenger() -> void:
 	_board_tween = create_tween()
 	_board_tween.tween_method(func(t: float) -> void:
 		if _passenger != null and is_instance_valid(_passenger) and is_instance_valid(vehicle):
-			_passenger.global_position = _passenger.global_position.lerp(vehicle.passenger_seat_global() + Vector3(1.4, -0.5, 0), t)
+			# Walk to the passenger-side (right/VN: -X) door, in car space.
+			var door_spot: Vector3 = vehicle.to_global(Vector3(-1.4, 0.0, 0.3))
+			_passenger.global_position = _passenger.global_position.lerp(door_spot, t)
 			body.tick(0.016, {"mode": "walk", "speed": 0.4})
 	, 0.0, 1.0, 1.1)
 	_board_tween.tween_callback(func() -> void:
@@ -178,8 +180,8 @@ func _complete_fare() -> void:
 		Events.toast.emit("💵 %s + tip %s (chạy nhanh!)" % [Game.format_money(_fare), Game.format_money(tip)])
 	else:
 		Events.toast.emit("💵 Nhận %s tiền cuốc xe" % Game.format_money(_fare))
-	# Passenger hops out and wanders off.
-	var out_pos: Vector3 = Game.player.vehicle.to_global(Vector3(1.7, 0.1, 0.3))
+	# Passenger hops out the passenger-side door and wanders off.
+	var out_pos: Vector3 = Game.player.vehicle.to_global(Vector3(-1.7, 0.1, 0.3))
 	_spawn_passenger(out_pos)
 	var body: Humanoid = _passenger.get_meta("body")
 	var walk_target := out_pos + Vector3(randf_range(-4, 4), 0, randf_range(2, 5))

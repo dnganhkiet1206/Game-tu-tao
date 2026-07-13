@@ -343,8 +343,22 @@ func _swim(delta: float) -> void:
 	horizontal = horizontal.move_toward(dir.normalized() * SWIM_SPEED if dir.length() > 0.05 else Vector3.ZERO, 10.0 * delta)
 	velocity.x = horizontal.x
 	velocity.z = horizontal.z
-	# Bob to the surface (head above water).
-	var target_y := water_y - 1.25
+	# A gentle current turns swimmers back before the world runs out.
+	var current := Vector3.ZERO
+	if global_position.x < 8.0:
+		current.x = 1.0
+	elif global_position.x > 792.0:
+		current.x = -1.0
+	if global_position.z < 8.0:
+		current.z = 1.0
+	elif global_position.z > 792.0:
+		current.z = -1.0
+	if current != Vector3.ZERO:
+		velocity += current.normalized() * 4.0
+	# Bob to the surface (head above water), riding the rendered waves.
+	var wave := Palette.wave_height_at(Vector2(global_position.x, global_position.z),
+		Time.get_ticks_msec() / 1000.0)
+	var target_y := water_y - 1.25 + wave * 0.6
 	velocity.y = clampf((target_y - global_position.y) * 4.0, -3.0, 3.0)
 	if horizontal.length() > 0.4:
 		_yaw_target = atan2(horizontal.x, horizontal.z)

@@ -30,7 +30,8 @@ func tick(delta: float) -> void:
 	if wanted > 0 and is_instance_valid(Game.player):
 		_chase(delta, manager)
 		return
-	# Off duty at night: stand inside the station (still visible via window).
+	# No active warrant: walk the beat around the station block (24 h shifts —
+	# the island keeps its police presence at night on purpose).
 	_patrol(delta)
 
 
@@ -69,6 +70,13 @@ func _chase(delta: float, manager: Node) -> void:
 		var dir := to_player.normalized()
 		dir.y = 0.0
 		rotation.y = lerp_angle(rotation.y, atan2(dir.x, dir.z), minf(10.0 * delta, 1.0))
+		# Officers don't swim: hold at the shoreline while the suspect
+		# paddles away (the evade timer keeps running out there).
+		var ahead := global_position + dir * 1.6
+		var terrain: Terrain = Game.world.terrain
+		if terrain.water_level_at(ahead.x, ahead.z) - terrain.height_at(ahead.x, ahead.z) > 0.6:
+			visual.tick(delta, {"mode": "talk"})  # shouting from the shore
+			return
 		velocity = dir * CHASE_SPEED + Vector3(0, -4.0, 0)
 		move_and_slide()
 	else:

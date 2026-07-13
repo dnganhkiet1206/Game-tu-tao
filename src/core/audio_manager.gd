@@ -17,9 +17,19 @@ var _ambient: Dictionary = {}
 var _ambient_targets: Dictionary = {}
 var _music_is_night := false
 
+# Underwater low-pass on the master bus (camera below the water surface).
+var _underwater := false
+var _lowpass_index := -1
+
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	var master := AudioServer.get_bus_index("Master")
+	var lowpass := AudioEffectLowPassFilter.new()
+	lowpass.cutoff_hz = 700.0
+	AudioServer.add_bus_effect(master, lowpass)
+	_lowpass_index = AudioServer.get_bus_effect_count(master) - 1
+	AudioServer.set_bus_effect_enabled(master, _lowpass_index, false)
 	for i in POOL_SIZE:
 		var p := AudioStreamPlayer3D.new()
 		p.unit_size = 6.0
@@ -155,6 +165,14 @@ func _update_music() -> void:
 		if stream != null:
 			music.stream = stream
 			music.play()
+
+
+## Muffle the whole mix while the camera is underwater.
+func set_underwater(on: bool) -> void:
+	if on == _underwater or _lowpass_index < 0:
+		return
+	_underwater = on
+	AudioServer.set_bus_effect_enabled(AudioServer.get_bus_index("Master"), _lowpass_index, on)
 
 
 static func _mix_db(full_db: float, amount: float) -> float:

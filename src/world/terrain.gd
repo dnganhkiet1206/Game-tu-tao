@@ -233,6 +233,10 @@ func map_base_image() -> Image:
 
 func ambience_at(pos: Vector3) -> Dictionary:
 	var waves := clampf(1.0 - (pos.x - 150.0) / 240.0, 0.0, 1.0)
+	# The lake laps too, just more gently than the open sea.
+	var lake_d := Vector2(pos.x, pos.z).distance_to(MapLayout.LAKE_CENTER)
+	var lake := clampf(1.0 - maxf(lake_d - MapLayout.LAKE_RADIUS, 0.0) / 60.0, 0.0, 1.0)
+	waves = maxf(waves, lake * 0.6)
 	var forest_rect: Rect2 = MapLayout.FOREST_RECT.grow(40.0)
 	var forest := 0.0
 	if forest_rect.has_point(Vector2(pos.x, pos.z)):
@@ -347,4 +351,6 @@ func _add_water_plane(node_name: String, size: Vector2, subdiv: Vector2i, pos: V
 	mi.position = pos
 	mi.name = node_name
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	# The wave shader displaces vertices above the flat plane's AABB.
+	mi.extra_cull_margin = 1.0
 	add_child(mi)

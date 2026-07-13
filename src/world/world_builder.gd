@@ -33,6 +33,7 @@ func build() -> void:
 	add_child(Weather.new())
 	Game.world = self
 	Events.hour_changed.connect(_on_hour_changed)
+	Events.weather_changed.connect(func(_w: String) -> void: _on_hour_changed(int(DayNight.time_hours)))
 	_on_hour_changed(int(DayNight.time_hours))
 	apply_quality()
 
@@ -330,6 +331,8 @@ func _add_multimesh(mesh: Mesh, transforms: Array[Transform3D], node_name: Strin
 	var mmi := MultiMeshInstance3D.new()
 	mmi.multimesh = mm
 	mmi.name = node_name
+	# Foliage sway displaces vertices beyond the static AABB.
+	mmi.extra_cull_margin = 1.0
 	add_child(mmi)
 
 
@@ -536,12 +539,13 @@ func _counter_zone(building_id: String, prompt: String, callback: Callable) -> v
 # --- runtime ------------------------------------------------------------------------------
 
 func _on_hour_changed(_hour: int) -> void:
-	var night := DayNight.is_night()
-	Palette.set_night_lights(night)
+	# Lights come on at night — and during storms, like in any real town.
+	var lights_on := DayNight.is_night() or DayNight.weather == "rain"
+	Palette.set_night_lights(lights_on)
 	for id in buildings:
 		var b: GameBuilding = buildings[id]
 		if b.interior_light != null:
-			b.interior_light.visible = night and Game.quality >= 1
+			b.interior_light.visible = lights_on and Game.quality >= 1
 
 
 ## Minimap texture: terrain base + building footprints stamped on top.

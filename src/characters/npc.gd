@@ -34,7 +34,8 @@ static func make(p_data: Dictionary) -> NPC:
 func _ready() -> void:
 	add_to_group("npc")
 	collision_layer = Layers.NPCS | Layers.INTERACT
-	collision_mask = Layers.WORLD
+	# PLAYER in the mask so residents step around you instead of ghosting through.
+	collision_mask = Layers.WORLD | Layers.PLAYER
 	var col := CollisionShape3D.new()
 	var capsule := CapsuleShape3D.new()
 	capsule.radius = 0.33
@@ -156,8 +157,10 @@ func tick(delta: float) -> void:
 		Mode.HIDDEN:
 			pass
 		Mode.WALKING:
-			_follow_path(delta, WALK_SPEED)
-			visual.tick(delta, {"mode": "walk", "speed": 0.35})
+			# Nobody strolls through a downpour — residents hurry when it rains.
+			var hurry := 1.0 + DayNight.rain_amount * 0.5
+			_follow_path(delta, WALK_SPEED * hurry)
+			visual.tick(delta, {"mode": "walk", "speed": 0.35 + DayNight.rain_amount * 0.3})
 		Mode.IDLE:
 			visual.tick(delta, {"mode": anim})
 

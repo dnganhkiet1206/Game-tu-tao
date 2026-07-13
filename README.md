@@ -75,6 +75,7 @@ Build:
 - NPC có lịch sinh hoạt thật: ngủ ở nhà, sáng đi làm, trưa ăn quán, tối dạo quảng trường/bãi biển.
 - Có **xe cộ chạy trên đường** (biết phanh tránh người) — và bạn có thể… chặn đầu cướp luôn chiếc xe đang chạy 😏.
 - **Xe tốn xăng** ⛽: đồng hồ xăng hiện khi lái, sắp cạn có bíp cảnh báo, hết xăng là chết máy giữa đường. Đổ xăng ở **Trạm Xăng Hòn Gió** (2₫/L, lái xe vào trụ bơm), hoặc mua **can xăng 10L** để cứu hộ. Taxi và xe mua ở gara có sẵn một can dự phòng — **mở cốp xe** ra mà lấy!
+- **Đừng lái xe xuống biển** 💦: nước sâu làm **chết máy** — bơi vào bờ bỏ xe lại, đội cứu hộ sẽ kéo xe ngập về chỗ cũ. Cảnh sát cũng không biết bơi: bị truy nã thì cứ nhảy xuống biển mà trốn (họ chỉ đứng trên bờ la hét).
 
 ## 7. Cấu trúc project
 
@@ -103,7 +104,8 @@ src/
 - **Ánh sáng theo giờ (keyframe)**: bình minh/hoàng hôn vàng cam (golden hour), trưa trắng trong, đêm có **ánh trăng xanh** — cùng một DirectionalLight đổi vai mặt trời/mặt trăng nên không tốn thêm chi phí bóng đổ.
 - **Bầu trời**: mây noise seamless đổi màu theo giờ (bụng mây cam lúc hoàng hôn, xám đặc khi mưa), đĩa mặt trời nhỏ thực tế, tonemap **ACES** + saturation/contrast tinh chỉnh.
 - **Nước**: 3 lớp sóng định hướng với pháp tuyến giải tích + gợn lăn tăn tần số cao (sun glint), fresnel nông/sâu — hoàn toàn procedural, không texture.
-- **Thời tiết ăn vào thế giới**: mưa làm **mặt đường bóng ướt** (roughness giảm), **cây nghiêng theo gió mạnh hơn** (shader sway), mưa không rơi xuyên mái nhà.
+- **Thời tiết ăn vào thế giới**: mưa làm **mặt đường bóng ướt** (roughness giảm), **cây nghiêng theo gió mạnh hơn** (shader sway), mưa không rơi xuyên mái nhà, **đèn nhà + đèn pha tự bật trong mưa**, cư dân rảo bước nhanh hơn.
+- **Mặt nước "thật"**: phao câu và người bơi **nhấp nhô theo đúng con sóng** đang render (CPU mirror của wave shader); camera chìm dưới nước có **tint xanh + âm thanh bị bóp** (low-pass).
 - Địa hình chia 25 chunk để cull; mỗi tòa nhà gộp thành **1 draw call**; cây/đá/cột đèn dùng **MultiMesh**; mặt nước không đổ bóng.
 - NPC có LOD: gần người chơi mới bật physics, ở xa trượt trên waypoint (gần như miễn phí).
 - 3 mức **Đồ hoạ** trong menu (Thấp / Vừa / Cao):

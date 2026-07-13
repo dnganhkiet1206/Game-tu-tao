@@ -7,6 +7,7 @@ var yaw := 0.0
 var pitch := -0.32
 var target: Node3D = null
 var follow_distance := 4.6
+var underwater := false  # camera lens below the water surface
 var _kick := 0.0
 var _touch_id := -1
 var _spring: SpringArm3D
@@ -80,3 +81,12 @@ func _physics_process(delta: float) -> void:
 	var target_fov := 66.0 + clampf(speed / 22.0, 0.0, 1.0) * 12.0 + _kick * 30.0
 	_camera.fov = lerpf(_camera.fov, target_fov, minf(delta * 5.0, 1.0))
 	_kick = maxf(_kick - delta * 1.6, 0.0)
+
+	# Underwater: tint the screen (HUD) and muffle the mix (Audio).
+	var cam_pos := _camera.global_position
+	var wet := false
+	if is_instance_valid(Game.world):
+		wet = Game.world.terrain.water_level_at(cam_pos.x, cam_pos.z) > cam_pos.y
+	if wet != underwater:
+		underwater = wet
+		Audio.set_underwater(wet)

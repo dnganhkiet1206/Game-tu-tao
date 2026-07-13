@@ -39,6 +39,11 @@ var _fuel_warned := false
 var _engine_dead := false
 var _fuel_saved_at := 0.0
 
+# Deep water drowns the engine; an abandoned flooded car gets towed back.
+var _flooded := false
+var _tow_timer := 0.0
+var _spawn_xform := Transform3D.IDENTITY
+
 # Trunk (not on pickups — they have an open bed).
 var is_trunk_open := false
 var trunk_has_can := false
@@ -115,15 +120,25 @@ func _ready() -> void:
 			_build_trunk()
 
 	set_physics_process(false)
+	set_process(false)  # only runs while flooded + abandoned (tow countdown)
 	Events.hour_changed.connect(func(_h: int) -> void: _update_lights())
+	Events.weather_changed.connect(func(_w: String) -> void: _update_lights())
 	_update_lights()
+	# The spawner positions us right after add_child; grab the transform then.
+	_capture_spawn.call_deferred()
+
+
+func _capture_spawn() -> void:
+	_spawn_xform = global_transform
 
 
 func _door_prompt() -> String:
 	if fuel <= 2.0 and Game.count_item("fuel_can") > 0 and driver == null:
 		return "Đổ can xăng (+%dL)" % int(CAN_LITERS)
-	if owner_tag == "npc":
-		return "Cướp xe ⚠"
+	if owner_tag == "npc" and not stolen_reported:
+		return "Cướp xe ⚠"  # once stolen it's "yours" — no double crime, no scary prompt
+	if _flooded:
+		return "Lái xe (chết máy)"
 	return "Lái xe"
 
 
@@ -183,7 +198,7 @@ func refuel(liters: float) -> void:
 		_fuel_warned = false
 		if _engine_dead:
 			_engine_dead = false
-			if driver != null:
+			if driver != null and not _flooded:
 				Audio.play_at("car_start", global_position, 0.0)
 
 
@@ -292,7 +307,9 @@ func _build_visual() -> void:
 
 func _update_lights() -> void:
 	var driven := driver != null or not ai_route.is_empty()
-	var on := DayNight.is_night() and driven and Game.quality >= 1
+	# Headlights at night — and in the rain, like any sensible driver.
+	var dark := DayNight.is_night() or DayNight.weather == "rain"
+	var on := dark and driven and Game.quality >= 1
 	for light in _headlights:
 		light.light_energy = 2.4 if on else 0.0
 
@@ -434,7 +451,10 @@ func set_driver(p_driver: Node3D) -> void:
 	if is_trunk_open:
 		_set_trunk(false)
 	set_physics_process(true)
-	if fuel > 0.0:
+	if _flooded:
+		Audio.play_at("engine_die", global_position, 0.0)
+		Events.toast.emit("Máy ngập nước, không nổ được — cần kéo xe lên chỗ khô.")
+	elif fuel > 0.0:
 		Audio.play_at("car_start", global_position, 0.0)
 	else:
 		Audio.play_at("engine_die", global_position, 0.0)
@@ -454,6 +474,31 @@ func release_driver() -> void:
 	_engine.stop()
 	set_physics_process(false)
 	_update_lights()
+	if _flooded:
+		_tow_timer = 0.0
+		set_process(true)  # start the tow-recovery countdown
+
+
+## Tow-truck fiction: a flooded car abandoned out of sight gets hauled back
+## to where it first spawned, so no vehicle (or the taxi job) is lost at sea.
+func _process(delta: float) -> void:
+	if driver != null or not _flooded:
+		set_process(false)
+		return
+	if is_instance_valid(Game.player) \
+			and Game.player.global_position.distance_to(global_position) < 45.0:
+		_tow_timer = 0.0
+		return
+	_tow_timer += delta
+	if _tow_timer >= 15.0:
+		_flooded = false
+		_tow_timer = 0.0
+		speed = 0.0
+		velocity = Vector3.ZERO
+		global_transform = _spawn_xform
+		set_process(false)
+		if owner_tag == "player" or kind == "taxi":
+			Events.toast.emit("🚛 Cứu hộ đã kéo chiếc xe ngập nước về chỗ cũ.")
 
 
 func eject_driver() -> void:
@@ -506,6 +551,23 @@ func _physics_process(delta: float) -> void:
 	_consume_fuel(delta, throttle, top)
 	if fuel <= 0.0:
 		throttle = 0.0
+
+	# Water: shallow water drags the car, deep water drowns the engine.
+	var depth := _water_depth()
+	if depth > 0.55:
+		if not _flooded:
+			_flooded = true
+			Audio.play_at("engine_die", global_position, 2.0)
+			Events.toast.emit("💦 Xe chết máy vì ngập nước!")
+	elif _flooded and depth < 0.25:
+		_flooded = false
+		if fuel > 0.0:
+			Audio.play_at("car_start", global_position, 0.0)
+			Events.toast.emit("Máy ráo nước, nổ lại được rồi!")
+	if _flooded:
+		throttle = 0.0
+	if depth > 0.05:
+		speed = move_toward(speed, 0.0, (3.0 + depth * 6.0) * delta)
 
 	# Speed integration.
 	if throttle > 0.0:
@@ -569,9 +631,17 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed("horn"):
 		Audio.play_at("car_horn", global_position, 2.0)
 
-	# Engine sound follows speed; a dead engine is silent.
-	if fuel <= 0.0:
+	# Engine sound follows speed; a dead (or drowned) engine is silent.
+	if fuel <= 0.0 or _flooded:
 		_engine.volume_db = lerpf(_engine.volume_db, -60.0, minf(delta * 4.0, 1.0))
 	else:
 		_engine.pitch_scale = 0.75 + clampf(absf(speed) / top, 0.0, 1.0) * 0.85
 		_engine.volume_db = lerpf(-14.0, -4.0, clampf(absf(speed) / top, 0.0, 1.0) + absf(throttle) * 0.25)
+
+
+## Water depth over the wheel line (0 when there is no water here).
+func _water_depth() -> float:
+	if not is_instance_valid(Game.world):
+		return 0.0
+	var wl: float = Game.world.terrain.water_level_at(global_position.x, global_position.z)
+	return maxf(wl - global_position.y, 0.0)

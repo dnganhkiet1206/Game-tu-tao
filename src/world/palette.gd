@@ -168,6 +168,20 @@ static func set_night_lights(on: bool) -> void:
 	lamp_mat().emission_energy_multiplier = 3.0 if on else 0.0
 
 
+## CPU mirror of the water shader's vertex waves, so floating gameplay
+## objects (fishing bobber, swimmer, flooded cars) ride the same surface
+## the GPU renders. Keep the constants in sync with WATER_SHADER.
+static func wave_height_at(p: Vector2, time_s: float) -> float:
+	var d1 := Vector2(1.0, 0.35).normalized()
+	var d2 := Vector2(-0.7, 1.0).normalized()
+	var d3 := Vector2(0.3, -1.0).normalized()
+	var t := time_s * 1.1  # wave_speed
+	var h := 0.55 * sin(p.dot(d1) * 0.24 + t) \
+		+ 0.32 * sin(p.dot(d2) * 0.31 + t * 1.27) \
+		+ 0.13 * sin(p.dot(d3) * 0.52 + t * 1.71)
+	return h * 0.14  # wave_height
+
+
 ## Rain response shared by the whole generated world: wet ground turns
 ## reflective and the wind picks up in the trees. One material write each.
 static func set_wetness(amount: float) -> void:

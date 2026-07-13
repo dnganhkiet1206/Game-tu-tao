@@ -114,6 +114,7 @@ func _quality_row() -> HBoxContainer:
 		btn.custom_minimum_size = Vector2(92, 44)
 		btn.pressed.connect(func() -> void:
 			Game.quality = i
+			Game.save_settings()
 			_sync_quality_rows()
 			if is_instance_valid(Game.world):
 				Game.world.apply_quality()

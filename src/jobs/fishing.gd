@@ -11,6 +11,8 @@ var cursor := 0.0          # 0..1 position on the timing bar
 var _cursor_speed := 1.6
 var _player: PlayerCharacter = null
 var _bobber: MeshInstance3D = null
+var _cast_point := Vector3.ZERO
+var _bobber_floating := false  # true once the drop-in tween has landed
 var _timer := 0.0
 var _elapsed := 0.0
 var _bite_window := 0.0
@@ -70,12 +72,17 @@ func _spawn_bobber(point: Vector3) -> void:
 	sphere.material = Palette.mat(Color(0.9, 0.25, 0.2), 0.4)
 	_bobber.mesh = sphere
 	add_child(_bobber)
+	_cast_point = point
+	_bobber_floating = false
 	_bobber.global_position = point + Vector3(0, 2.0, 0)
 	var tween := create_tween()
 	tween.set_trans(Tween.TRANS_BOUNCE)
 	tween.set_ease(Tween.EASE_OUT)
 	tween.tween_property(_bobber, "global_position", point, 0.5)
-	tween.tween_callback(func() -> void: Audio.play_at("bobber_plop", point, -6.0))
+	tween.tween_callback(func() -> void:
+		_bobber_floating = true
+		Audio.play_at("bobber_plop", point, -6.0)
+	)
 
 
 func _clear_bobber() -> void:
@@ -115,8 +122,10 @@ func _process(delta: float) -> void:
 	match phase:
 		Phase.WAITING:
 			_timer -= delta
-			if _bobber != null:
-				_bobber.position.y += sin(Time.get_ticks_msec() * 0.004) * 0.0006
+			if _bobber != null and _bobber_floating:
+				# Ride the same waves the water shader renders.
+				_bobber.global_position.y = _cast_point.y + Palette.wave_height_at(
+					Vector2(_cast_point.x, _cast_point.z), Time.get_ticks_msec() / 1000.0)
 			if _timer <= 0.0:
 				phase = Phase.BITE
 				_bite_window = 1.25

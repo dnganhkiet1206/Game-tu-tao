@@ -39,6 +39,9 @@ func _setup(mesh: ArrayMesh, radius: float, height: float) -> void:
 	collision_mask = 0
 	_mesh = MeshInstance3D.new()
 	_mesh.mesh = mesh
+	if kind == "tree":
+		# Wind sway displaces vertices beyond the static AABB.
+		_mesh.extra_cull_margin = 1.0
 	add_child(_mesh)
 	var col := CollisionShape3D.new()
 	var shape := CylinderShape3D.new()

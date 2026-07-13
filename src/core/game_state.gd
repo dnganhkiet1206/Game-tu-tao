@@ -3,6 +3,7 @@ extends Node
 ## Everything that must survive a save/load round-trip lives here.
 
 const SAVE_PATH := "user://hongio_save.json"
+const SETTINGS_PATH := "user://hongio_settings.json"
 const SAVE_VERSION := 1
 
 ## Item database. sell = price NPC vendors pay, buy = price in shops (0 = not sold).
@@ -60,6 +61,30 @@ var pending_spawn: Dictionary = {}
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	load_settings()
+
+
+# --- Settings (separate file: device preferences must survive without a
+# --- save slot, and changing them must never touch the game save) ------------
+
+func save_settings() -> void:
+	var file := FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
+	if file == null:
+		return
+	file.store_string(JSON.stringify({"quality": quality}))
+	file.close()
+
+
+func load_settings() -> void:
+	if not FileAccess.file_exists(SETTINGS_PATH):
+		return
+	var file := FileAccess.open(SETTINGS_PATH, FileAccess.READ)
+	if file == null:
+		return
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if parsed is Dictionary:
+		quality = clampi(int((parsed as Dictionary).get("quality", 1)), 0, 2)
 
 
 # --- Money ------------------------------------------------------------------
@@ -148,7 +173,6 @@ func save_game() -> void:
 		"owned_cars": owned_cars,
 		"house_tier": house_tier,
 		"stats": stats,
-		"quality": quality,
 		"fuel_levels": fuel_levels,
 		"time_hours": DayNight.time_hours,
 		"day": DayNight.day,
@@ -180,12 +204,14 @@ func load_game() -> bool:
 	var data: Dictionary = parsed
 	money = int(data.get("money", 150))
 	inventory = data.get("inventory", {})
+	# Delivery rounds don't survive a save; drop any orphaned packages so
+	# they can't clutter the inventory forever (they can't be sold or used).
+	inventory.erase("package")
 	owned_cars = data.get("owned_cars", [])
 	house_tier = int(data.get("house_tier", 0))
 	var saved_stats: Dictionary = data.get("stats", {})
 	for key in saved_stats:
 		stats[key] = saved_stats[key]
-	quality = int(data.get("quality", 1))
 	fuel_levels = data.get("fuel_levels", {})
 	DayNight.time_hours = float(data.get("time_hours", 8.0))
 	DayNight.day = int(data.get("day", 1))
