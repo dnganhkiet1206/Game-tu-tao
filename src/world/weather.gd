@@ -1,7 +1,8 @@
 class_name Weather
 extends Node3D
 ## Rain particles that follow the player. Emission scales with
-## DayNight.rain_amount so showers fade in and out smoothly.
+## DayNight.rain_amount so showers fade in and out smoothly, and is
+## suppressed while the player stands inside a building (roofed area).
 
 var _particles: GPUParticles3D
 
@@ -37,6 +38,10 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	var rain := DayNight.rain_amount
+	# No rain under a roof: fade the emitter out while the player is indoors.
+	if rain > 0.0 and is_instance_valid(Game.player) and is_instance_valid(Game.world):
+		var indoor: float = Game.world.ambience_at(Game.player.global_position).get("indoor", 0.0)
+		rain *= 1.0 - indoor
 	if rain > 0.05:
 		if not _particles.emitting:
 			_particles.emitting = true

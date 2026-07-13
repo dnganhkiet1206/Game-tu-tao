@@ -13,9 +13,12 @@ static func begin() -> SurfaceTool:
 	return st
 
 
-static func commit(st: SurfaceTool) -> ArrayMesh:
+static func commit(st: SurfaceTool, foliage: bool = false) -> ArrayMesh:
 	var mesh := st.commit()
-	mesh.surface_set_material(0, Palette.vertex_mat())
+	var material: Material = Palette.vertex_mat()
+	if foliage:
+		material = Palette.foliage_mat()
+	mesh.surface_set_material(0, material)
 	return mesh
 
 
@@ -140,7 +143,7 @@ static func pine_mesh(variant: int = 0) -> ArrayMesh:
 		add_cylinder(st, Vector3(rng.randf_range(-0.1, 0.1), y, rng.randf_range(-0.1, 0.1)), r, 0.0, 1.9, 7, green.darkened(0.06 * i))
 		y += 1.25
 		r *= 0.68
-	var mesh := commit(st)
+	var mesh := commit(st, true)
 	_mesh_cache[key] = mesh
 	return mesh
 
@@ -155,7 +158,7 @@ static func broadleaf_mesh(variant: int = 0) -> ArrayMesh:
 	add_cylinder(st, Vector3.ZERO, 0.3, 0.22, 2.3, 6, Color(0.45, 0.33, 0.22), false)
 	var green := Color(0.3, 0.5, 0.24).lightened(rng.randf_range(0.0, 0.1))
 	add_blob(st, Vector3(0, 3.4, 0), 1.9, green, rng, 0.22, 4, 7, 0.85)
-	var mesh := commit(st)
+	var mesh := commit(st, true)
 	_mesh_cache[key] = mesh
 	return mesh
 
@@ -185,7 +188,7 @@ static func palm_mesh(variant: int = 0) -> ArrayMesh:
 		add_tri(st, top + side, mid - side, top - side, shade)
 		add_tri(st, top + side, mid + side, mid - side, shade)
 		add_tri(st, mid + side, tip, mid - side, green.darkened(0.08))
-	var mesh := commit(st)
+	var mesh := commit(st, true)
 	_mesh_cache[key] = mesh
 	return mesh
 

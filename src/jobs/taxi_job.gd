@@ -17,6 +17,7 @@ var _fare := 0
 var _trip_timer := 0.0
 var _expected_time := 0.0
 var _cooldown := 0.0
+var _board_tween: Tween = null
 
 
 func _ready() -> void:
@@ -48,6 +49,11 @@ func _on_exited_vehicle(vehicle: Node3D) -> void:
 
 func _cancel() -> void:
 	phase = Phase.OFF
+	# The boarding animation must die with the job, or its callback would
+	# re-arm the dropoff objective after the ride was cancelled.
+	if _board_tween != null and _board_tween.is_valid():
+		_board_tween.kill()
+	_board_tween = null
 	_clear_passenger()
 	Events.clear_objective()
 	Events.job_ended.emit("taxi", false)
@@ -125,13 +131,13 @@ func _board_passenger() -> void:
 	# Walk to the car, then hop in.
 	var body: Humanoid = _passenger.get_meta("body")
 	var seat: Vector3 = vehicle.passenger_seat_global()
-	var tween := create_tween()
-	tween.tween_method(func(t: float) -> void:
+	_board_tween = create_tween()
+	_board_tween.tween_method(func(t: float) -> void:
 		if _passenger != null and is_instance_valid(_passenger) and is_instance_valid(vehicle):
 			_passenger.global_position = _passenger.global_position.lerp(vehicle.passenger_seat_global() + Vector3(1.4, -0.5, 0), t)
 			body.tick(0.016, {"mode": "walk", "speed": 0.4})
 	, 0.0, 1.0, 1.1)
-	tween.tween_callback(func() -> void:
+	_board_tween.tween_callback(func() -> void:
 		_clear_passenger()
 		Audio.play_at("car_door_close", seat, -4.0)
 		var spots: Array = MapLayout.TAXI_SPOTS.duplicate()

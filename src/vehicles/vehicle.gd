@@ -44,6 +44,7 @@ var is_trunk_open := false
 var trunk_has_can := false
 var _trunk: Node3D = null
 
+var _visual: Node3D              # tilts with terrain/acceleration; physics stays upright
 var _door_l: Node3D
 var _wheels: Array[Node3D] = []
 var _wheel_spin := 0.0
@@ -53,6 +54,8 @@ var _headlights: Array[SpotLight3D] = []
 var _passenger_seat: Node3D
 var _vy := 0.0
 var _skid_cooldown := 0.0
+var _prev_speed := 0.0
+var _hud_node: Node = null
 
 
 static func make(p_kind: String, p_owner: String, p_id: String) -> Vehicle:
@@ -112,7 +115,7 @@ func _ready() -> void:
 			_build_trunk()
 
 	set_physics_process(false)
-	DayNight.hour_changed.connect(func(_h: int) -> void: _update_lights())
+	Events.hour_changed.connect(func(_h: int) -> void: _update_lights())
 	_update_lights()
 
 
@@ -132,7 +135,7 @@ func _build_trunk() -> void:
 	lid.material_override = Palette.mat(KINDS[kind].color.darkened(0.08))
 	lid.position = Vector3(0, 0, -0.41)
 	_trunk.add_child(lid)
-	add_child(_trunk)
+	_visual.add_child(_trunk)
 	var zone := InteractZone.make(Vector3(0, 0.8, -2.3), 1.35, "Mở cốp", _on_trunk_interact)
 	zone.prompt_provider = _trunk_prompt
 	add_child(zone)
@@ -208,6 +211,9 @@ func _consume_fuel(delta: float, throttle: float, top: float) -> void:
 
 
 func _build_visual() -> void:
+	_visual = Node3D.new()
+	_visual.name = "Visual"
+	add_child(_visual)
 	var spec: Dictionary = KINDS[kind]
 	var body_color: Color = spec.color
 	var st := Props.begin()
@@ -235,7 +241,7 @@ func _build_visual() -> void:
 		Props.add_box(st, Vector3(0, 0.95, -1.2), Vector3(1.7, 0.35, 1.4), body_color.darkened(0.2))
 	var mesh_node := MeshInstance3D.new()
 	mesh_node.mesh = Props.commit(st)
-	add_child(mesh_node)
+	_visual.add_child(mesh_node)
 
 	# Driver door (visual, animates open). Facing +Z, the driver's
 	# (left/VN) side is +X.
@@ -246,7 +252,7 @@ func _build_visual() -> void:
 	door_mesh.material_override = Palette.mat(KINDS[kind].color.darkened(0.12))
 	door_mesh.position = Vector3(0, 0, -0.5)
 	_door_l.add_child(door_mesh)
-	add_child(_door_l)
+	_visual.add_child(_door_l)
 
 	# Wheels.
 	for offset in [Vector3(-0.82, 0.34, 1.3), Vector3(0.82, 0.34, 1.3), Vector3(-0.82, 0.34, -1.3), Vector3(0.82, 0.34, -1.3)]:
@@ -262,7 +268,7 @@ func _build_visual() -> void:
 		wheel_mesh.mesh = cyl
 		wheel_mesh.rotation_degrees = Vector3(0, 0, 90)
 		wheel_pivot.add_child(wheel_mesh)
-		add_child(wheel_pivot)
+		_visual.add_child(wheel_pivot)
 		_wheels.append(wheel_pivot)
 
 	# Seats sit low so the driver's head stays under the cabin roof
@@ -280,7 +286,7 @@ func _build_visual() -> void:
 		light.light_energy = 0.0
 		light.light_color = Color(1.0, 0.93, 0.75)
 		light.shadow_enabled = false
-		add_child(light)
+		_visual.add_child(light)
 		_headlights.append(light)
 
 
@@ -397,6 +403,7 @@ func _ai_drive(delta: float) -> void:
 		_vy -= GRAVITY * delta
 	velocity = global_transform.basis.z * speed + Vector3(0, _vy, 0)
 	move_and_slide()
+	_update_visual_tilt(delta, 0.0, 0.0)
 	_wheel_spin += speed * delta / 0.34
 	for i in _wheels.size():
 		_wheels[i].rotation.x = _wheel_spin
@@ -404,6 +411,20 @@ func _ai_drive(delta: float) -> void:
 			_wheels[i].rotation.y = clampf(err, -0.4, 0.4)
 	_engine.pitch_scale = 0.75 + clampf(absf(speed) / AI_SPEED, 0.0, 1.0) * 0.5
 	_engine.volume_db = -12.0
+
+
+## Tilts the visual shell only: pitch/roll follow the ground normal plus
+## acceleration squat and cornering lean. The collision box stays upright,
+## so slopes can't introduce physics jitter.
+func _update_visual_tilt(delta: float, pitch_offset: float, roll_offset: float) -> void:
+	var target_pitch := pitch_offset
+	var target_roll := roll_offset
+	if is_on_floor():
+		var n := global_transform.basis.inverse() * get_floor_normal()
+		target_pitch += atan2(-n.z, n.y)
+		target_roll += atan2(-n.x, n.y)
+	_visual.rotation.x = lerpf(_visual.rotation.x, clampf(target_pitch, -0.4, 0.4), minf(delta * 6.0, 1.0))
+	_visual.rotation.z = lerpf(_visual.rotation.z, clampf(target_roll, -0.35, 0.35), minf(delta * 6.0, 1.0))
 
 
 func set_driver(p_driver: Node3D) -> void:
@@ -422,13 +443,24 @@ func set_driver(p_driver: Node3D) -> void:
 	_update_lights()
 
 
+## Instantly detach the driver (no exit animation). Used by eject_driver
+## and by the police bust flow, which teleports the player away mid-drive.
+func release_driver() -> void:
+	if driver == null:
+		return
+	driver = null
+	speed = 0.0
+	velocity = Vector3.ZERO
+	_engine.stop()
+	set_physics_process(false)
+	_update_lights()
+
+
 func eject_driver() -> void:
 	if driver == null:
 		return
 	var p := driver
-	driver = null
-	speed = 0.0
-	velocity = Vector3.ZERO
+	release_driver()
 	open_door()
 	Audio.play_at("car_door_open", global_position, -2.0)
 	var exit_spot := to_global(Vector3(1.7, 0.1, 0.4))
@@ -437,9 +469,6 @@ func eject_driver() -> void:
 		exit_spot.y = maxf(exit_spot.y, ground + 0.05)
 	if p is PlayerCharacter:
 		(p as PlayerCharacter).exit_vehicle_at(exit_spot)
-	_engine.stop()
-	set_physics_process(false)
-	_update_lights()
 	var timer := get_tree().create_timer(0.9)
 	timer.timeout.connect(close_door)
 
@@ -463,7 +492,9 @@ func _physics_process(delta: float) -> void:
 		if Input.is_action_pressed("move_back"):
 			throttle -= 1.0
 		steer = Input.get_axis("move_right", "move_left")
-		var hud := get_tree().get_first_node_in_group("hud")
+		if not is_instance_valid(_hud_node):
+			_hud_node = get_tree().get_first_node_in_group("hud")
+		var hud := _hud_node
 		if hud != null and "joystick_vector" in hud:
 			var jv: Vector2 = hud.joystick_vector
 			if absf(jv.x) > absf(steer):
@@ -519,6 +550,12 @@ func _physics_process(delta: float) -> void:
 			if absf(speed) > 6.0:
 				Audio.play_at("car_skid", global_position, 0.0)
 			speed *= 0.25
+
+	# Body language: squat under acceleration, dive under braking, lean in turns.
+	var accel_pitch := clampf((speed - _prev_speed) / maxf(delta, 0.001) * 0.0045, -0.07, 0.05)
+	var lean := _steer_visual * clampf(absf(speed) / 12.0, 0.0, 1.0) * 0.22
+	_prev_speed = speed
+	_update_visual_tilt(delta, accel_pitch, lean)
 
 	# Wheels: spin + front steer.
 	_wheel_spin += speed * delta / 0.34

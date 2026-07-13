@@ -32,7 +32,7 @@ func build() -> void:
 	road_graph.build(terrain)
 	add_child(Weather.new())
 	Game.world = self
-	DayNight.hour_changed.connect(_on_hour_changed)
+	Events.hour_changed.connect(_on_hour_changed)
 	_on_hour_changed(int(DayNight.time_hours))
 	apply_quality()
 
@@ -45,35 +45,90 @@ func _build_sky() -> void:
 	sun.shadow_enabled = true
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
 	sun.directional_shadow_max_distance = 70.0
-	sun.directional_shadow_blend_splits = false
+	sun.directional_shadow_fade_start = 0.85
 	add_child(sun)
 
-	var env := Environment.new()
-	var sky := Sky.new()
 	var sky_mat := ProceduralSkyMaterial.new()
-	sky_mat.sun_angle_max = 15.0
+	sky_mat.sun_angle_max = 8.0     # tight, realistic sun disc + halo
+	sky_mat.sun_curve = 0.12
+	sky_mat.use_debanding = true
+	sky_mat.sky_cover = _make_cloud_texture()
+	sky_mat.sky_cover_modulate = Color(1, 1, 1, 0.5)
+	var sky := Sky.new()
 	sky.sky_material = sky_mat
+	# Day/night tints the sky every frame; incremental radiance updates keep
+	# the ambient/reflection probe refresh affordable on mobile GPUs.
+	sky.process_mode = Sky.PROCESS_MODE_INCREMENTAL
+	sky.radiance_size = Sky.RADIANCE_SIZE_128
+
+	var env := Environment.new()
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color(0.8, 0.85, 0.95)
 	env.ambient_light_energy = 1.0
+	env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	env.fog_enabled = true
 	env.fog_light_color = Color(0.65, 0.75, 0.85)
 	env.fog_density = 0.004
-	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.fog_aerial_perspective = 0.35
+	env.fog_sky_affect = 0.2
+	env.tonemap_mode = Environment.TONE_MAPPER_ACES
+	env.tonemap_white = 6.0
+	env.glow_enabled = false  # apply_quality() enables it on medium/high
+	env.glow_intensity = 0.55
+	env.glow_hdr_threshold = 1.1
+	env.adjustment_enabled = true
+	env.adjustment_saturation = 1.07
+	env.adjustment_contrast = 1.03
 	world_env = WorldEnvironment.new()
 	world_env.environment = env
 	add_child(world_env)
 	DayNight.register_sky(sun, env)
 
 
+## Seamless noise clouds for the procedural sky; the day/night cycle tints
+## them (white noon, amber dusk, storm gray in rain) via sky_cover_modulate.
+func _make_cloud_texture() -> NoiseTexture2D:
+	var noise := FastNoiseLite.new()
+	noise.seed = 7
+	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	noise.fractal_octaves = 4
+	noise.frequency = 0.008
+	var ramp := Gradient.new()
+	ramp.set_color(0, Color(1, 1, 1, 0))
+	ramp.set_color(1, Color(1, 1, 1, 1))
+	ramp.set_offset(0, 0.45)
+	ramp.set_offset(1, 0.85)
+	var tex := NoiseTexture2D.new()
+	tex.width = 512
+	tex.height = 256
+	tex.seamless = true
+	tex.noise = noise
+	tex.color_ramp = ramp
+	return tex
+
+
 func apply_quality() -> void:
 	var q: int = Game.quality
 	sun.directional_shadow_max_distance = [40.0, 70.0, 110.0][q]
+	sun.directional_shadow_blend_splits = q == 2
 	RenderingServer.directional_shadow_atlas_set_size([1024, 2048, 4096][q], true)
-	var render_scale: float = [0.8, 1.0, 1.0][q]
-	get_viewport().scaling_3d_scale = render_scale
+	RenderingServer.directional_soft_shadow_filter_set_quality(
+		[RenderingServer.SHADOW_QUALITY_SOFT_VERY_LOW,
+		RenderingServer.SHADOW_QUALITY_SOFT_LOW,
+		RenderingServer.SHADOW_QUALITY_SOFT_MEDIUM][q])
+	var vp := get_viewport()
+	vp.scaling_3d_scale = [0.8, 1.0, 1.0][q]
+	# MSAA is close to free on mobile tiled GPUs and is the best AA fit here.
+	vp.msaa_3d = [Viewport.MSAA_DISABLED, Viewport.MSAA_2X, Viewport.MSAA_4X][q]
+	world_env.environment.glow_enabled = q >= 1
+	var cam := vp.get_camera_3d()
+	if cam != null:
+		cam.far = [420.0, 600.0, 800.0][q]
+	# Re-evaluate everything that gates on quality (interior lights, headlights).
+	_on_hour_changed(int(DayNight.time_hours))
+	get_tree().call_group("vehicle", "_update_lights")
 
 
 # --- buildings -----------------------------------------------------------------------

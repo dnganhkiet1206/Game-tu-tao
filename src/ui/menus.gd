@@ -7,6 +7,7 @@ signal start_requested(load_save: bool)
 var _main_menu: Control
 var _pause_menu: Control
 var _upgrade_menu: Control
+var _quality_rows: Array[HBoxContainer] = []
 
 
 func _ready() -> void:
@@ -20,6 +21,14 @@ func _ready() -> void:
 
 func any_open() -> bool:
 	return _main_menu.visible or _pause_menu.visible or _upgrade_menu.visible
+
+
+func is_pause_open() -> bool:
+	return _pause_menu.visible
+
+
+func is_upgrade_open() -> bool:
+	return _upgrade_menu.visible
 
 
 func _hud() -> Hud:
@@ -100,22 +109,34 @@ func _quality_row() -> HBoxContainer:
 		var btn := Button.new()
 		btn.text = names[i]
 		btn.toggle_mode = true
+		btn.set_meta("quality", i)
 		btn.button_pressed = Game.quality == i
 		btn.custom_minimum_size = Vector2(92, 44)
 		btn.pressed.connect(func() -> void:
 			Game.quality = i
-			for other in row.get_children():
-				if other is Button:
-					other.button_pressed = other.text == names[i]
+			_sync_quality_rows()
 			if is_instance_valid(Game.world):
 				Game.world.apply_quality()
 		)
 		row.add_child(btn)
+	_quality_rows.append(row)
 	return row
+
+
+## Both menus (title + pause) show a quality row; keep every button in
+## step with Game.quality — it can change from the other menu or a loaded save.
+func _sync_quality_rows() -> void:
+	for row in _quality_rows:
+		if not is_instance_valid(row):
+			continue
+		for child in row.get_children():
+			if child is Button:
+				(child as Button).button_pressed = child.get_meta("quality") == Game.quality
 
 
 func open_main(has_save: bool) -> void:
 	_main_menu.visible = true
+	_sync_quality_rows()
 	var continue_btn: Button = _main_menu.find_child("ContinueBtn", true, false)
 	if continue_btn != null:
 		continue_btn.visible = has_save
@@ -184,6 +205,7 @@ func open_pause() -> void:
 	if any_open():
 		return
 	_pause_menu.visible = true
+	_sync_quality_rows()
 	get_tree().paused = true
 	_hud().push_block()
 	var stats: Label = _pause_menu.find_child("StatsLabel", true, false)

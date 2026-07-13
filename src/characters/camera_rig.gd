@@ -23,7 +23,7 @@ func _ready() -> void:
 	_camera = Camera3D.new()
 	_camera.fov = 66.0
 	_camera.near = 0.1
-	_camera.far = 480.0
+	_camera.far = 600.0  # WorldRoot.apply_quality() adjusts per quality tier
 	_camera.current = true
 	_spring.add_child(_camera)
 

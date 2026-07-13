@@ -328,45 +328,23 @@ func _emit_cell(st: SurfaceTool, ix: int, iz: int, faces: PackedVector3Array) ->
 
 
 func _build_water() -> void:
-	var sea := PlaneMesh.new()
-	sea.size = Vector2(190, 820)
-	sea.subdivide_width = 24
-	sea.subdivide_depth = 90
-	sea.material = Palette.water_mat()
-	var sea_mi := MeshInstance3D.new()
-	sea_mi.mesh = sea
-	sea_mi.position = Vector3(70, MapLayout.SEA_LEVEL, 400)
-	sea_mi.name = "Sea"
-	add_child(sea_mi)
+	_add_water_plane("Sea", Vector2(190, 820), Vector2i(24, 90), Vector3(70, MapLayout.SEA_LEVEL, 400))
 	# Thin strips wrap the south/east island edges so distant water exists there.
-	var east := PlaneMesh.new()
-	east.size = Vector2(120, 820)
-	east.subdivide_width = 8
-	east.subdivide_depth = 30
-	east.material = Palette.water_mat()
-	var east_mi := MeshInstance3D.new()
-	east_mi.mesh = east
-	east_mi.position = Vector3(810, MapLayout.SEA_LEVEL, 400)
-	east_mi.name = "SeaEast"
-	add_child(east_mi)
-	var south := PlaneMesh.new()
-	south.size = Vector2(700, 120)
-	south.subdivide_width = 24
-	south.subdivide_depth = 6
-	south.material = Palette.water_mat()
-	var south_mi := MeshInstance3D.new()
-	south_mi.mesh = south
-	south_mi.position = Vector3(450, MapLayout.SEA_LEVEL, 810)
-	south_mi.name = "SeaSouth"
-	add_child(south_mi)
+	_add_water_plane("SeaEast", Vector2(120, 820), Vector2i(8, 30), Vector3(810, MapLayout.SEA_LEVEL, 400))
+	_add_water_plane("SeaSouth", Vector2(700, 120), Vector2i(24, 6), Vector3(450, MapLayout.SEA_LEVEL, 810))
+	_add_water_plane("Lake", Vector2(150, 150), Vector2i(18, 18),
+		Vector3(MapLayout.LAKE_CENTER.x, MapLayout.LAKE_LEVEL, MapLayout.LAKE_CENTER.y))
 
-	var lake := PlaneMesh.new()
-	lake.size = Vector2(150, 150)
-	lake.subdivide_width = 18
-	lake.subdivide_depth = 18
-	lake.material = Palette.water_mat()
-	var lake_mi := MeshInstance3D.new()
-	lake_mi.mesh = lake
-	lake_mi.position = Vector3(MapLayout.LAKE_CENTER.x, MapLayout.LAKE_LEVEL, MapLayout.LAKE_CENTER.y)
-	lake_mi.name = "Lake"
-	add_child(lake_mi)
+
+func _add_water_plane(node_name: String, size: Vector2, subdiv: Vector2i, pos: Vector3) -> void:
+	var plane := PlaneMesh.new()
+	plane.size = size
+	plane.subdivide_width = subdiv.x
+	plane.subdivide_depth = subdiv.y
+	plane.material = Palette.water_mat()
+	var mi := MeshInstance3D.new()
+	mi.mesh = plane
+	mi.position = pos
+	mi.name = node_name
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(mi)

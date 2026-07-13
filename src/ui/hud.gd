@@ -36,6 +36,7 @@ var _objective_pos := Vector3.ZERO
 var _objective_active := false
 var _sprint_idle_time := 0.0
 var _blocked_count := 0
+var _fishing_ctl: Node = null  # cached fishing controller (group lookup once)
 
 var shop_panel: ShopPanel
 var menus: Menus
@@ -306,7 +307,7 @@ func _build_fishing() -> void:
 
 # --- runtime ----------------------------------------------------------------------
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if player == null or not is_instance_valid(player):
 		return
 	player.move_input = Vector2.ZERO if _blocked_count > 0 else joystick_vector
@@ -319,7 +320,7 @@ func _process(_delta: float) -> void:
 	_minimap.visible = _blocked_count == 0
 	# Sprint auto-off when idle.
 	if joystick_vector.length() < 0.05:
-		_sprint_idle_time += _delta
+		_sprint_idle_time += delta
 		if _sprint_idle_time > 0.7 and player.sprint_held:
 			_set_sprint(false)
 	else:
@@ -352,6 +353,10 @@ func _process(_delta: float) -> void:
 			shop_panel.close_panel()
 		elif _dialogue_panel.visible:
 			_close_dialogue()
+		elif menus.is_upgrade_open():
+			menus.close_upgrade()
+		elif menus.is_pause_open():
+			menus.close_pause()
 		elif not menus.any_open():
 			menus.open_pause()
 	_update_fishing()
@@ -580,7 +585,9 @@ func _draw_objective_arrow() -> void:
 
 
 func _update_fishing() -> void:
-	var ctl := get_tree().get_first_node_in_group("fishing")
+	if not is_instance_valid(_fishing_ctl):
+		_fishing_ctl = get_tree().get_first_node_in_group("fishing")
+	var ctl := _fishing_ctl
 	if ctl == null or ctl.phase == FishingController.Phase.OFF:
 		_fishing_ui.visible = false
 		return
@@ -598,8 +605,8 @@ func _update_fishing() -> void:
 
 
 func _draw_fishing_bar() -> void:
-	var ctl := get_tree().get_first_node_in_group("fishing")
-	if ctl == null or ctl.phase != FishingController.Phase.REELING:
+	var ctl := _fishing_ctl
+	if ctl == null or not is_instance_valid(ctl) or ctl.phase != FishingController.Phase.REELING:
 		return
 	var bar_w := 460.0
 	var bar_h := 26.0

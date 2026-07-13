@@ -97,13 +97,27 @@ src/
   ui/                    # hud, virtual_joystick, touch_button, shop_panel, menus
 ```
 
-## 8. Hiệu năng trên mobile
+## 8. Đồ họa & hiệu năng trên mobile
 
 - Renderer **Mobile (Vulkan)**, texture nén ETC2/ASTC, tối đa 60 FPS.
-- Địa hình chia 25 chunk để cull; mỗi tòa nhà gộp thành **1 draw call**; cây/đá/cột đèn dùng **MultiMesh**.
+- **Ánh sáng theo giờ (keyframe)**: bình minh/hoàng hôn vàng cam (golden hour), trưa trắng trong, đêm có **ánh trăng xanh** — cùng một DirectionalLight đổi vai mặt trời/mặt trăng nên không tốn thêm chi phí bóng đổ.
+- **Bầu trời**: mây noise seamless đổi màu theo giờ (bụng mây cam lúc hoàng hôn, xám đặc khi mưa), đĩa mặt trời nhỏ thực tế, tonemap **ACES** + saturation/contrast tinh chỉnh.
+- **Nước**: 3 lớp sóng định hướng với pháp tuyến giải tích + gợn lăn tăn tần số cao (sun glint), fresnel nông/sâu — hoàn toàn procedural, không texture.
+- **Thời tiết ăn vào thế giới**: mưa làm **mặt đường bóng ướt** (roughness giảm), **cây nghiêng theo gió mạnh hơn** (shader sway), mưa không rơi xuyên mái nhà.
+- Địa hình chia 25 chunk để cull; mỗi tòa nhà gộp thành **1 draw call**; cây/đá/cột đèn dùng **MultiMesh**; mặt nước không đổ bóng.
 - NPC có LOD: gần người chơi mới bật physics, ở xa trượt trên waypoint (gần như miễn phí).
-- 3 mức **Đồ hoạ** trong menu (Thấp / Vừa / Cao): đổi độ phân giải render, bóng đổ, đèn nội thất.
-- Máy tầm trung nên để **Vừa**; máy yếu để **Thấp** (tắt bóng đổ, render scale 0.8).
+- 3 mức **Đồ hoạ** trong menu (Thấp / Vừa / Cao):
+
+| | Thấp | Vừa | Cao |
+|---|---|---|---|
+| Render scale | 0.8 | 1.0 | 1.0 |
+| MSAA (gần như miễn phí trên GPU mobile) | — | 2× | 4× |
+| Bóng đổ mặt trời | — | 2048, 70 m | 4096, 110 m, blend splits |
+| Bloom/Glow (đèn đêm phát sáng) | — | ✓ | ✓ |
+| Đèn nội thất + đèn pha xe ban đêm | — | ✓ | ✓ |
+| Tầm nhìn camera | 420 m | 600 m | 800 m |
+
+- Máy tầm trung nên để **Vừa**; máy yếu để **Thấp**.
 
 ## 9. Công cụ dev (tuỳ chọn)
 

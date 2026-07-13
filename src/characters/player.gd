@@ -39,6 +39,7 @@ var _swim_stroke_timer := 0.0
 var _fall_speed_peak := 0.0
 var _interactables: Array = []
 var _yaw_target := 0.0
+var _transition_tween: Tween = null  # enter/exit vehicle animation
 
 @onready var interact_area: Area3D = null
 
@@ -459,12 +460,15 @@ func try_punch() -> void:
 				hit_something = true
 				break
 	# Smashing parked cars counts as vandalism (with a per-car cooldown so
-	# one flurry of punches doesn't stack stars instantly).
+	# one flurry of punches doesn't stack stars instantly). Your own car is
+	# yours to dent in peace.
 	if not hit_something:
 		for car in get_tree().get_nodes_in_group("vehicle"):
 			var to_car: Vector3 = car.global_position - global_position
 			if to_car.length() < 2.6 and forward.dot(to_car.normalized()) > 0.3:
 				hit_something = true
+				if car.get("owner_tag") == "player":
+					break
 				var now := Time.get_ticks_msec()
 				var last: int = car.get_meta("last_vandal_ms", -100000)
 				if now - last > 8000:
@@ -489,12 +493,12 @@ func enter_vehicle(v: Node3D) -> void:
 	collision_layer = 0
 	collision_mask = 0
 	var seat: Vector3 = v.call("seat_global_position")
-	var tween := create_tween()
-	tween.set_trans(Tween.TRANS_SINE)
-	tween.set_ease(Tween.EASE_IN_OUT)
-	tween.tween_property(self, "global_position", seat, 0.42)
-	tween.parallel().tween_property(self, "rotation:y", v.global_rotation.y, 0.42)
-	tween.tween_callback(func() -> void:
+	_transition_tween = create_tween()
+	_transition_tween.set_trans(Tween.TRANS_SINE)
+	_transition_tween.set_ease(Tween.EASE_IN_OUT)
+	_transition_tween.tween_property(self, "global_position", seat, 0.42)
+	_transition_tween.parallel().tween_property(self, "rotation:y", v.global_rotation.y, 0.42)
+	_transition_tween.tween_callback(func() -> void:
 		state = State.DRIVING
 		v.call("set_driver", self)
 		Events.player_entered_vehicle.emit(v)
@@ -515,11 +519,11 @@ func exit_vehicle_at(spot: Vector3) -> void:
 	var old_vehicle := vehicle
 	vehicle = null
 	state = State.LOCKED
-	var tween := create_tween()
-	tween.set_trans(Tween.TRANS_SINE)
-	tween.set_ease(Tween.EASE_IN_OUT)
-	tween.tween_property(self, "global_position", spot, 0.4)
-	tween.tween_callback(func() -> void:
+	_transition_tween = create_tween()
+	_transition_tween.set_trans(Tween.TRANS_SINE)
+	_transition_tween.set_ease(Tween.EASE_IN_OUT)
+	_transition_tween.tween_property(self, "global_position", spot, 0.4)
+	_transition_tween.tween_callback(func() -> void:
 		collision_layer = Layers.PLAYER
 		collision_mask = Layers.WORLD | Layers.VEHICLE | Layers.NPCS
 		state = State.GROUND
@@ -531,9 +535,23 @@ func exit_vehicle_at(spot: Vector3) -> void:
 
 # --- busted / respawn ----------------------------------------------------------------
 
+## Getting arrested can interrupt anything — including the enter/exit
+## vehicle animation. Kill any pending transition so its deferred callback
+## can't flip the state back to DRIVING after the teleport to the station.
 func busted(fine: int) -> void:
-	if state == State.DRIVING and vehicle != null and vehicle.has_method("eject_driver"):
-		vehicle.eject_driver()
+	if _transition_tween != null and _transition_tween.is_valid():
+		_transition_tween.kill()
+	_transition_tween = null
+	var v := vehicle
+	vehicle = null
+	if v != null and is_instance_valid(v):
+		if v.get("driver") == self:
+			v.call("release_driver")
+		if v.has_method("close_door"):
+			v.call("close_door")
+		Events.player_exited_vehicle.emit(v)
+	collision_layer = Layers.PLAYER
+	collision_mask = Layers.WORLD | Layers.VEHICLE | Layers.NPCS
 	state = State.LOCKED
 	velocity = Vector3.ZERO
 	Events.player_busted.emit(fine)
