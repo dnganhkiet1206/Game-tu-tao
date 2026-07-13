@@ -358,7 +358,9 @@ func _process(delta: float) -> void:
 	if Input.is_action_just_pressed("map") and not menus.any_open() and not shop_panel.visible:
 		toggle_big_map()
 	if Input.is_action_just_pressed("pause"):
-		if big_map.visible:
+		if menus.is_help_open():
+			menus.close_help()  # topmost overlay closes first
+		elif big_map.visible:
 			big_map.close()
 		elif shop_panel.visible:
 			shop_panel.close_panel()

@@ -26,6 +26,8 @@ Toàn bộ project là **text + asset sinh tự động** — không có asset n
 
 Điều khiển trên PC (để test): **WASD** di chuyển, **Space** nhảy/leo, **Shift** chạy nhanh, **E** tương tác, **F** đấm, **H** còi xe, chuột kéo (giữ chuột phải/trái ở nửa phải màn hình) xoay camera, **Esc** tạm dừng. Chuột cũng giả lập cảm ứng nên joystick ảo hoạt động khi kéo ở nửa trái màn hình.
 
+> 📖 Bảng điều khiển đầy đủ (cảm ứng + phím PC + mẹo chơi) có ngay trong game: nút **"Hướng dẫn điều khiển"** ở menu chính và menu tạm dừng.
+
 ## 3. Build & cài lên điện thoại Android
 
 Chỉ cần làm 1 lần:

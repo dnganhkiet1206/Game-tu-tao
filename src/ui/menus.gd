@@ -1,12 +1,13 @@
 class_name Menus
 extends Control
-## Title screen, pause menu and the house-upgrade dialog.
+## Title screen, pause menu, the house-upgrade dialog and the controls guide.
 
 signal start_requested(load_save: bool)
 
 var _main_menu: Control
 var _pause_menu: Control
 var _upgrade_menu: Control
+var _help_menu: Control
 var _quality_rows: Array[HBoxContainer] = []
 
 
@@ -17,10 +18,12 @@ func _ready() -> void:
 	_build_main_menu()
 	_build_pause_menu()
 	_build_upgrade_menu()
+	_build_help_menu()  # built last so it overlays the menu that opened it
 
 
 func any_open() -> bool:
-	return _main_menu.visible or _pause_menu.visible or _upgrade_menu.visible
+	return _main_menu.visible or _pause_menu.visible or _upgrade_menu.visible \
+		or _help_menu.visible
 
 
 func is_pause_open() -> bool:
@@ -29,6 +32,10 @@ func is_pause_open() -> bool:
 
 func is_upgrade_open() -> bool:
 	return _upgrade_menu.visible
+
+
+func is_help_open() -> bool:
+	return _help_menu.visible
 
 
 func _hud() -> Hud:
@@ -88,6 +95,7 @@ func _build_main_menu() -> void:
 	box.add_child(new_btn)
 
 	box.add_child(_quality_row())
+	box.add_child(_help_button())
 
 
 func _spacer(height: float) -> Control:
@@ -133,6 +141,124 @@ func _sync_quality_rows() -> void:
 		for child in row.get_children():
 			if child is Button:
 				(child as Button).button_pressed = child.get_meta("quality") == Game.quality
+
+
+# --- controls guide ----------------------------------------------------------------
+
+func _help_button() -> Button:
+	var btn := Button.new()
+	btn.text = "📖  Hướng dẫn điều khiển"
+	btn.custom_minimum_size = Vector2(320, 48)
+	btn.pressed.connect(open_help)
+	return btn
+
+
+## Two-column cheat sheet: touch controls (the real target) + PC test keys.
+## Opened from the title screen or the pause menu, so the game is already
+## paused and input-blocked — this is a pure overlay on top.
+func _build_help_menu() -> void:
+	_help_menu = Control.new()
+	_help_menu.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_help_menu.visible = false
+	add_child(_help_menu)
+
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.6)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_help_menu.add_child(dim)
+
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_help_menu.add_child(center)
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(720, 0)
+	center.add_child(panel)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 10)
+	panel.add_child(box)
+
+	var title := Label.new()
+	title.text = "📖 HƯỚNG DẪN ĐIỀU KHIỂN"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 28)
+	box.add_child(title)
+
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(680, 380)
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	box.add_child(scroll)
+	var rows := VBoxContainer.new()
+	rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	rows.add_theme_constant_override("separation", 4)
+	scroll.add_child(rows)
+
+	_help_header(rows, "📱 Trên điện thoại")
+	_help_row(rows, "Nửa trái màn hình", "Joystick ảo — chạm đâu hiện đó, kéo để đi")
+	_help_row(rows, "Vuốt nửa phải", "Xoay camera")
+	_help_row(rows, "Nút ❗ / ✋", "Tương tác: cửa, nói chuyện, mua bán, câu cá, lên xe")
+	_help_row(rows, "Nút ⬆", "Nhảy / leo lên vật cản, gờ tường")
+	_help_row(rows, "Nút 🏃", "Bật / tắt chạy nhanh")
+	_help_row(rows, "Nút 👊", "Đấm (cẩn thận bị truy nã!)")
+	_help_row(rows, "Chạm minimap", "Mở bản đồ toàn đảo")
+	_help_row(rows, "Trong xe", "▲ ga  •  ▼ phanh/lùi  •  🅿 phanh tay  •  📢 còi  •  🚪 ra xe")
+
+	_help_header(rows, "⌨️ Trên máy tính (bản test)")
+	_help_row(rows, "W A S D / mũi tên", "Di chuyển — trong xe: W ga, S lùi, A-D lái")
+	_help_row(rows, "Space", "Nhảy / leo — trong xe: phanh tay")
+	_help_row(rows, "Shift", "Chạy nhanh")
+	_help_row(rows, "E", "Tương tác / ra xe")
+	_help_row(rows, "F", "Đấm")
+	_help_row(rows, "H", "Còi xe")
+	_help_row(rows, "Kéo chuột nửa phải", "Xoay camera")
+	_help_row(rows, "M", "Bản đồ toàn đảo")
+	_help_row(rows, "Esc", "Tạm dừng / đóng bảng đang mở")
+
+	_help_header(rows, "💡 Mẹo nhanh")
+	_help_row(rows, "Ngủ sau 19:00", "Lưu game và sang ngày mới (giường nhà bạn)")
+	_help_row(rows, "Hết xăng", "Đổ ở trạm xăng, hoặc lấy can dự phòng trong cốp xe")
+	_help_row(rows, "Bị truy nã ⭐", "Chạy trốn đủ lâu, nộp phạt ở trạm cảnh sát — hoặc bơi ra biển")
+
+	var close := Button.new()
+	close.text = "Đóng"
+	close.pressed.connect(close_help)
+	box.add_child(close)
+
+
+func _help_header(parent: VBoxContainer, text: String) -> void:
+	var label := Label.new()
+	label.text = text
+	label.add_theme_font_size_override("font_size", 24)
+	label.add_theme_color_override("font_color", Color(0.95, 0.8, 0.4))
+	parent.add_child(label)
+
+
+func _help_row(parent: VBoxContainer, control_name: String, effect: String) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	var left := Label.new()
+	left.text = control_name
+	left.custom_minimum_size = Vector2(230, 0)
+	left.add_theme_font_size_override("font_size", 19)
+	left.add_theme_color_override("font_color", Color(1, 1, 1, 0.95))
+	var right := Label.new()
+	right.text = effect
+	right.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right.add_theme_font_size_override("font_size", 19)
+	right.add_theme_color_override("font_color", Color(1, 1, 1, 0.72))
+	row.add_child(left)
+	row.add_child(right)
+	parent.add_child(row)
+
+
+func open_help() -> void:
+	_help_menu.visible = true
+	Audio.play_ui("click")
+
+
+func close_help() -> void:
+	_help_menu.visible = false
+	Audio.play_ui("click")
 
 
 func open_main(has_save: bool) -> void:
@@ -193,6 +319,7 @@ func _build_pause_menu() -> void:
 	box.add_child(save)
 
 	box.add_child(_quality_row())
+	box.add_child(_help_button())
 
 	var stats := Label.new()
 	stats.name = "StatsLabel"
